@@ -238,6 +238,37 @@
         .scenario-card .sc-desc { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
         .scenario-card .sc-tips { margin-top: 8px; padding: 8px 10px; background: #FEF3C7; border-radius: 8px; font-size: 12px; }
 
+        /* 发音练习 */
+        .pron-sentence {
+            background: #F9FAFB; border-radius: 10px; padding: 14px; margin-bottom: 10px;
+        }
+        .pron-text { font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+        .pron-text .word-correct { color: var(--success); font-weight: 600; }
+        .pron-text .word-wrong { color: var(--danger); font-weight: 600; text-decoration: underline; }
+        .pron-text .word-miss { color: var(--accent); font-weight: 600; }
+        .pron-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .pron-btn {
+            display: flex; align-items: center; gap: 4px;
+            padding: 8px 14px; border-radius: 20px; border: none;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; font-family: inherit;
+        }
+        .pron-btn:active { transform: scale(0.95); }
+        .btn-play { background: #DBEAFE; color: #1E40AF; }
+        .btn-record { background: #FEE2E2; color: #991B1B; }
+        .btn-record.recording { background: var(--danger); color: #fff; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+        .pron-score {
+            margin-top: 10px; padding: 10px 14px; border-radius: 10px;
+            font-size: 13px; display: none;
+        }
+        .pron-score.show { display: block; }
+        .pron-score.good { background: #D1FAE5; color: #065F46; }
+        .pron-score.mid { background: #FEF3C7; color: #92400E; }
+        .pron-score.bad { background: #FEE2E2; color: #991B1B; }
+        .score-big { font-size: 24px; font-weight: 800; }
+        .pron-tip { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
         /* 弹窗 - 移动端全屏 */
         .sheet-overlay {
             position: fixed; inset:0; background: rgba(0,0,0,0.4); z-index:200;
@@ -327,8 +358,16 @@
 
 <!-- 3. 英语学习 -->
 <div class="tab-content" id="tab-english">
+    <!-- 发音练习（核心新功能） -->
+    <div class="section-title">🎤 发音练习</div>
+    <div class="card" id="pronunciation-card">
+        <div class="text-muted text-sm mb-12">选一句对话，听标准发音 → 跟读录音 → AI 评分</div>
+        <div class="dialogue-scroll" id="pron-dialogue-tabs"></div>
+        <div id="pron-sentences"></div>
+    </div>
+
     <!-- 每日对话 -->
-    <div class="section-title">每日情景对话</div>
+    <div class="section-title mt-12">每日情景对话</div>
     <div class="dialogue-scroll" id="dialogue-tabs"></div>
     <div id="dialogue-content"></div>
 
@@ -554,10 +593,219 @@ async function toggleCheckin(name,done){
     loadCheckin(); if(done) toast('打卡成功 🔥');
 }
 
+// ========== 发音练习 ==========
+let pronDialogueId = null;
+let recognition = null;
+let isRecording = false;
+
+function initPronunciation() {
+    if (!dialogues.length) return;
+    pronDialogueId = dialogues[0].id;
+    renderPronTabs();
+    renderPronSentences();
+}
+
+function renderPronTabs() {
+    document.getElementById('pron-dialogue-tabs').innerHTML = dialogues.map(d =>
+        `<div class="dialogue-tab ${pronDialogueId===d.id?'active':''}" onclick="selectPronDialogue(${d.id})">${d.topic}</div>`
+    ).join('');
+}
+
+function selectPronDialogue(id) {
+    pronDialogueId = id;
+    renderPronTabs();
+    renderPronSentences();
+}
+
+function renderPronSentences() {
+    const d = dialogues.find(x => x.id === pronDialogueId);
+    if (!d) return;
+    document.getElementById('pron-sentences').innerHTML = d.dialogue.map((line, i) => `
+        <div class="pron-sentence">
+            <div class="pron-text" id="pron-text-${i}">${line.text}</div>
+            <div class="pron-controls">
+                <button class="pron-btn btn-play" onclick="speakSentence(${i})">🔊 听发音</button>
+                <button class="pron-btn btn-record" id="rec-btn-${i}" onclick="toggleRecord(${i})">🎤 跟读录音</button>
+            </div>
+            <div class="pron-score" id="pron-score-${i}"></div>
+            <div class="pron-tip" id="pron-tip-${i}"></div>
+            <div style="display:none" id="pron-original-${i}">${line.text}</div>
+        </div>
+    `).join('');
+}
+
+// 语音合成 - 朗读句子
+function speakSentence(idx) {
+    const text = document.getElementById('pron-original-' + idx).textContent;
+    if (!('speechSynthesis' in window)) { toast('浏览器不支持语音播放'); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.9;
+    // 尝试选英文语音
+    const voices = speechSynthesis.getVoices();
+    const enVoice = voices.find(v => v.lang.startsWith('en'));
+    if (enVoice) u.voice = enVoice;
+    speechSynthesis.speak(u);
+}
+
+// 录音 + 识别
+function toggleRecord(idx) {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        startRecording(idx);
+    }
+}
+
+function startRecording(idx) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        toast('浏览器不支持语音识别，请用 Chrome');
+        return;
+    }
+    const originalText = document.getElementById('pron-original-' + idx).textContent;
+    recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    const btn = document.getElementById('rec-btn-' + idx);
+    btn.classList.add('recording');
+    btn.textContent = '⏹️ 停止录音';
+    isRecording = true;
+    document.getElementById('pron-tip-' + idx).textContent = '正在录音... 说完后点停止';
+
+    recognition.onresult = function(event) {
+        const spoken = event.results[0][0].transcript.toLowerCase().trim();
+        scorePronunciation(idx, originalText, spoken);
+    };
+
+    recognition.onerror = function(event) {
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 跟读录音';
+        isRecording = false;
+        if (event.error === 'not-allowed') {
+            toast('请允许麦克风权限');
+        } else {
+            toast('识别失败: ' + event.error);
+        }
+    };
+
+    recognition.onend = function() {
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 跟读录音';
+        isRecording = false;
+    };
+
+    try {
+        recognition.start();
+    } catch(e) {
+        toast('启动录音失败');
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 跟读录音';
+        isRecording = false;
+    }
+}
+
+function stopRecording() {
+    if (recognition) {
+        recognition.stop();
+    }
+    isRecording = false;
+}
+
+// 发音评分 - 对比原文和识别结果
+function scorePronunciation(idx, original, spoken) {
+    const origWords = original.toLowerCase().replace(/[^a-z\s']/g, '').split(/\s+/).filter(w => w.length > 0);
+    const spokenWords = spoken.toLowerCase().replace(/[^a-z\s']/g, '').split(/\s+/).filter(w => w.length > 0);
+
+    // 逐词匹配（考虑顺序）
+    let correct = 0, wrong = [], missed = [];
+    let si = 0;
+    let highlightedText = '';
+
+    for (let i = 0; i < origWords.length; i++) {
+        const target = origWords[i];
+        // 在spokenWords当前位置附近找匹配
+        let found = false;
+        for (let j = si; j < Math.min(si + 3, spokenWords.length); j++) {
+            if (spokenWords[j] === target || levenshtein(spokenWords[j], target) <= 1) {
+                found = true;
+                correct++;
+                highlightedText += `<span class="word-correct">${target}</span> `;
+                si = j + 1;
+                break;
+            }
+        }
+        if (!found) {
+            // 检查是否说了一个错词
+            if (si < spokenWords.length && spokenWords[si] !== target) {
+                wrong.push(target);
+                highlightedText += `<span class="word-wrong">${target}</span> `;
+            } else {
+                missed.push(target);
+                highlightedText += `<span class="word-miss">${target}</span> `;
+            }
+        }
+    }
+
+    const score = Math.round((correct / origWords.length) * 100);
+    const scoreEl = document.getElementById('pron-score-' + idx);
+    const textEl = document.getElementById('pron-text-' + idx);
+    const tipEl = document.getElementById('pron-tip-' + idx);
+
+    // 显示高亮文本
+    textEl.innerHTML = highlightedText.trim();
+
+    // 评分显示
+    let cls = score >= 80 ? 'good' : score >= 50 ? 'mid' : 'bad';
+    let emoji = score >= 80 ? '🎉' : score >= 50 ? '💪' : '📚';
+    let msg = score >= 80 ? '发音很棒！' : score >= 50 ? '还不错，继续练' : '多听几遍再试';
+
+    let detail = '';
+    if (wrong.length) detail += `发音不准: ${wrong.join(', ')}。`;
+    if (missed.length) detail += `漏读: ${missed.join(', ')}。`;
+
+    scoreEl.className = 'pron-score show ' + cls;
+    scoreEl.innerHTML = `
+        <div class="flex flex-between flex-center">
+            <span class="score-big">${score}<span style="font-size:14px">分</span></span>
+            <span>${emoji} ${msg}</span>
+        </div>
+        <div style="margin-top:6px;font-size:12px">你说: "${spoken}"</div>
+    `;
+    tipEl.textContent = detail || '全部正确！';
+
+    // 恢复原文显示（3秒后）
+    setTimeout(() => {
+        textEl.innerHTML = original;
+    }, 5000);
+}
+
+// 莱文斯坦距离 - 用于模糊匹配单词
+function levenshtein(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    const m = [];
+    for (let i = 0; i <= b.length; i++) m[i] = [i];
+    for (let j = 0; j <= a.length; j++) m[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i-1) === a.charAt(j-1)) {
+                m[i][j] = m[i-1][j-1];
+            } else {
+                m[i][j] = Math.min(m[i-1][j-1]+1, m[i][j-1]+1, m[i-1][j]+1);
+            }
+        }
+    }
+    return m[b.length][a.length];
+}
+
 // ========== 英语学习 ==========
 async function initEnglish() {
     await Promise.all([loadDialogues(),loadVocabCards(),loadRetell(),loadRoleplay()]);
-    if(dialogues.length) selectDialogue(dialogues[0].id);
+    if(dialogues.length) { selectDialogue(dialogues[0].id); initPronunciation(); }
 }
 async function loadDialogues(){const r=await fetch(`${API}/api/dialogues`);dialogues=await r.json();renderDialogueTabs();}
 function renderDialogueTabs(){document.getElementById('dialogue-tabs').innerHTML=dialogues.map(d=>`<div class="dialogue-tab ${currentDialogue?.id===d.id?'active':''}" onclick="selectDialogue(${d.id})">${d.topic}</div>`).join('');}
@@ -678,7 +926,7 @@ async function logStudy(module,duration){
 document.getElementById('sched-date').value = formatDate(new Date());
 loadDashboard();
 // 预加载英语数据
-fetch(`${API}/api/dialogues`).then(r=>r.json()).then(d=>{dialogues=d;renderDialogueTabs();if(d.length)selectDialogue(d[0].id);});
+fetch(`${API}/api/dialogues`).then(r=>r.json()).then(d=>{dialogues=d;renderDialogueTabs();if(d.length)selectDialogue(d[0].id);initPronunciation();});
 fetch(`${API}/api/vocab-cards`).then(r=>r.json()).then(d=>{vocabCards=d;document.getElementById('vocab-grid').innerHTML=vocabCards.map((c,i)=>`<div class="vocab-card" id="vc-${i}" onclick="flipCard(${i})"><div class="vc-badge badge-${c.difficulty==='hard'?'hard':c.difficulty==='easy'?'easy':'med'}">${c.difficulty}</div><div class="vc-word">${c.word}</div><div class="vc-phonetic">${c.phonetic||''}</div><div class="vc-back"><div><strong>释义</strong> ${c.meaning}</div><div class="text-muted text-sm mt-4"><strong>例句</strong> ${c.example}</div><button class="btn btn-sm btn-primary mt-8" onclick="event.stopPropagation();addToVocab('${c.word}','${c.meaning}','${c.phonetic}','${c.example}','${c.difficulty}')">加入单词本</button></div></div>`).join('');});
 fetch(`${API}/api/retell`).then(r=>r.json()).then(d=>{retellMaterials=d;if(!currentRetell)currentRetell=d[0];renderRetellTabs();renderRetellContent();});
 fetch(`${API}/api/roleplay`).then(r=>r.json()).then(d=>{roleplayScenarios=d;document.getElementById('roleplay-list').innerHTML=d.map(s=>`<div class="scenario-card" onclick="openRoleplaySheet(${s.id})"><div class="sc-title">🎭 ${s.title}</div><div class="sc-desc">角色：${s.role} | ${s.setting}</div><div class="sc-tips">💡 ${s.tips}</div></div>`).join('');});
