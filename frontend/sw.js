@@ -1,5 +1,5 @@
 // English Workbench Service Worker - 网络优先策略
-const CACHE = 'workbench-v2';
+const CACHE = 'workbench-v3';
 const URLS = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 // 安装时立即激活新版本
