@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Workbench">
+    <meta name="theme-color" content="#3730A3">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <title>English Workbench</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #3730A3;
+            --accent: #F59E0B;
+            --success: #10B981;
+            --danger: #EF4444;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text: #1F2937;
+            --text-muted: #6B7280;
+            --border: #E5E7EB;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.55;
+            font-size: 15px;
+            padding-bottom: calc(72px + var(--safe-bottom));
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 顶部栏 */
+        .topbar {
+            position: sticky; top:0; z-index:90;
+            background: var(--primary-dark);
+            color:#fff;
+            padding: 12px 16px;
+            padding-top: max(12px, env(safe-area-inset-top));
+            display: flex; align-items: center; justify-content: space-between;
+            font-weight: 700; font-size: 17px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .topbar-title { display:flex; align-items:center; gap:6px; }
+        .topbar-title span { color: var(--accent); }
+
+        /* 底部导航 */
+        .bottombar {
+            position: fixed; bottom:0; left:0; right:0; z-index:100;
+            background: var(--card-bg);
+            display: flex;
+            border-top: 1px solid var(--border);
+            padding-bottom: var(--safe-bottom);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+        }
+        .bottom-tab {
+            flex:1; display:flex; flex-direction:column; align-items:center;
+            padding: 8px 4px 4px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.15s;
+            font-size: 11px; font-weight: 500;
+        }
+        .bottom-tab.active { color: var(--primary); }
+        .bottom-tab .tab-icon { font-size: 22px; margin-bottom: 2px; }
+
+        /* 页面切换 */
+        .tab-content { display: none; padding: 16px; min-height: 60vh; }
+        .tab-content.active { display: block; }
+
+        /* 卡片 */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        /* 统计数字 */
+        .stats-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        .stat-item {
+            flex:1; background: var(--card-bg); border-radius: var(--radius);
+            padding: 14px; box-shadow: var(--shadow); text-align: center;
+        }
+        .stat-item .val { font-size: 26px; font-weight: 800; }
+        .stat-item .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        /* 按钮 */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; padding: 10px 18px; border: none; border-radius: 10px;
+            cursor: pointer; font-size: 14px; font-weight: 600;
+            transition: all 0.15s; font-family: inherit;
+            min-height: 42px;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:active { background: var(--primary-dark); transform: scale(0.97); }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; min-height: 32px; border-radius: 8px; }
+        .btn-block { width:100%; }
+        .btn-icon { width:42px; height:42px; padding:0; border-radius:50%; font-size:20px; }
+        .fab {
+            position: fixed; bottom: calc(80px + var(--safe-bottom)); right: 16px; z-index:110;
+            width: 52px; height: 52px; border-radius: 50%; background: var(--primary);
+            color:#fff; font-size: 26px; border: none; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(79,70,229,0.4);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.15s;
+        }
+        .fab:active { transform: scale(0.9); }
+
+        /* 输入框 */
+        input, select, textarea {
+            padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-size: 15px; width:100%; outline: none; font-family: inherit;
+            background: #F9FAFB; transition: border 0.15s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); background:#fff; }
+
+        /* 待办项 */
+        .todo-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px; border-radius: var(--radius-sm); margin-bottom: 8px;
+            background: var(--card-bg); box-shadow: var(--shadow);
+            transition: all 0.15s;
+        }
+        .todo-item.done { opacity: 0.55; background: #F9FAFB; }
+        .todo-item.done .todo-title { text-decoration: line-through; }
+        .todo-checkbox {
+            width: 22px; height: 22px; cursor: pointer; accent-color: var(--primary);
+            flex-shrink: 0;
+        }
+        .todo-info { flex:1; min-width:0; }
+        .todo-title { font-weight: 500; word-break: break-word; }
+        .todo-meta { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+        .tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .tag-high { background: #FEE2E2; color: #991B1B; }
+        .tag-med { background: #FEF3C7; color: #92400E; }
+        .tag-low { background: #DBEAFE; color: #1E40AF; }
+        .todo-del { color: var(--danger); font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+
+        /* 时间块 */
+        .timeline { position: relative; padding-left: 16px; }
+        .timeline::before {
+            content: ''; position: absolute; left: 4px; top: 4px; bottom: 4px;
+            width: 2px; background: var(--border); border-radius: 1px;
+        }
+        .time-block {
+            position: relative; padding: 12px 14px; margin-bottom: 10px;
+            background: var(--card-bg); border-radius: var(--radius-sm);
+            box-shadow: var(--shadow); border-left: 3px solid var(--primary);
+        }
+        .time-block::before {
+            content: ''; position: absolute; left: -21px; top: 16px;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--primary); border: 2px solid #fff;
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+        .time-block .tb-time { font-size: 13px; font-weight: 700; color: var(--primary); }
+        .time-block .tb-title { font-weight: 600; margin-top: 2px; }
+        .time-block .tb-note { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+        /* 打卡 */
+        .checkin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .checkin-card {
+            background: var(--card-bg); border-radius: var(--radius);
+            padding: 18px 12px; text-align: center; cursor: pointer;
+            box-shadow: var(--shadow); border: 2px solid transparent;
+            transition: all 0.15s;
+        }
+        .checkin-card:active { transform: scale(0.96); }
+        .checkin-card.done { background: #ECFDF5; border-color: var(--success); }
+        .checkin-card .ci-icon { font-size: 30px; }
+        .checkin-card .ci-name { font-weight: 600; margin-top: 6px; font-size: 14px; }
+        .checkin-card .ci-count { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        /* 对话 */
+        .dialogue-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 12px; -webkit-overflow-scrolling: touch; }
+        .dialogue-scroll::-webkit-scrollbar { display: none; }
+        .dialogue-tab {
+            padding: 8px 16px; border-radius: 20px; white-space: nowrap;
+            background: var(--card-bg); border: 1.5px solid var(--border);
+            cursor: pointer; font-size: 13px; font-weight: 600;
+            transition: all 0.15s; flex-shrink: 0;
+        }
+        .dialogue-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .dialogue-line {
+            padding: 12px; border-radius: 10px; margin-bottom: 6px;
+            background: #F9FAFB; font-size: 14px;
+        }
+        .dialogue-line .sp { font-weight: 700; color: var(--primary); }
+        .dialogue-line .sp.you { color: var(--accent); }
+        .key-phrase {
+            background: #FEF3C7; border-radius: 6px; padding: 1px 6px;
+            cursor: pointer; font-weight: 600;
+        }
+
+        /* 词汇卡片 */
+        .vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+        .vocab-card {
+            background: var(--card-bg); border-radius: var(--radius);
+            padding: 14px; box-shadow: var(--shadow); cursor: pointer;
+            position: relative; transition: transform 0.15s;
+            min-height: 100px;
+        }
+        .vocab-card:active { transform: scale(0.97); }
+        .vocab-card .vc-word { font-size: 17px; font-weight: 700; color: var(--primary-dark); }
+        .vocab-card .vc-phonetic { color: var(--text-muted); font-size: 12px; }
+        .vocab-card .vc-back { display: none; margin-top: 8px; }
+        .vocab-card.flipped .vc-back { display: block; }
+        .vocab-card .vc-badge {
+            position: absolute; top: 10px; right: 10px;
+            padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700;
+        }
+        .badge-easy { background: #D1FAE5; color: #065F46; }
+        .badge-med { background: #FEF3C7; color: #92400E; }
+        .badge-hard { background: #FEE2E2; color: #991B1B; }
+
+        /* 场景卡片 */
+        .scenario-card {
+            background: var(--card-bg); border-radius: var(--radius);
+            padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow);
+            cursor: pointer; border-left: 4px solid var(--accent);
+        }
+        .scenario-card:active { transform: scale(0.98); }
+        .scenario-card .sc-title { font-weight: 700; font-size: 15px; }
+        .scenario-card .sc-desc { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+        .scenario-card .sc-tips { margin-top: 8px; padding: 8px 10px; background: #FEF3C7; border-radius: 8px; font-size: 12px; }
+
+        /* 弹窗 - 移动端全屏 */
+        .sheet-overlay {
+            position: fixed; inset:0; background: rgba(0,0,0,0.4); z-index:200;
+            display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .sheet-overlay.show { opacity: 1; pointer-events: auto; }
+        .sheet {
+            background: #fff; border-radius: 20px 20px 0 0;
+            width: 100%; max-height: 85vh; overflow-y: auto;
+            padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+            transform: translateY(100%); transition: transform 0.25s ease-out;
+        }
+        .sheet-overlay.show .sheet { transform: translateY(0); }
+        .sheet-handle { width: 36px; height: 4px; background: #D1D5DB; border-radius: 2px; margin: 0 auto 16px; }
+        .sheet h3 { font-size: 18px; margin-bottom: 14px; }
+        .form-row { margin-bottom: 14px; }
+        .form-row label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
+        .form-row-inline { display: flex; gap: 10px; }
+        .form-row-inline > * { flex:1; }
+        .sheet-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .sheet-actions .btn { flex:1; }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: var(--text); color: #fff; padding: 10px 20px;
+            border-radius: 20px; font-size: 14px; font-weight: 500;
+            z-index: 300; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none; white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* 辅助 */
+        .section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+        .flex { display:flex; } .flex-between { justify-content:space-between; }
+        .flex-center { align-items:center; } .gap-8 { gap:8px; } .gap-4 { gap:4px; }
+        .mb-12 { margin-bottom:12px; } .mt-12 { margin-top:12px; } .mt-8 { margin-top:8px; }
+        .text-muted { color:var(--text-muted); } .text-sm { font-size:13px; }
+        .flex-1 { flex:1; }
+    </style>
+</head>
+<body>
+
+<!-- 顶部栏 -->
+<div class="topbar">
+    <div class="topbar-title">English<span>·</span>Workbench</div>
+    <div style="font-size:13px;opacity:0.7" id="topbar-date"></div>
+</div>
+
+<!-- ===== 标签页内容 ===== -->
+
+<!-- 1. 仪表盘 -->
+<div class="tab-content active" id="tab-dashboard">
+    <div class="stats-row" id="stats-row"></div>
+    <div class="section-title">今日日程</div>
+    <div id="dash-schedule"></div>
+    <div class="section-title mt-12">最近学习</div>
+    <div id="dash-study"></div>
+</div>
+
+<!-- 2. 工作台（待办 + 日程 + 打卡的聚合） -->
+<div class="tab-content" id="tab-workbench">
+    <!-- 待办 -->
+    <div class="section-title flex flex-between flex-center">
+        <span>待办清单</span>
+        <button class="btn btn-sm btn-primary" onclick="openTodoSheet()">+ 添加</button>
+    </div>
+    <div id="todo-list"></div>
+
+    <!-- 日程 -->
+    <div class="section-title mt-12 flex flex-between flex-center">
+        <span>日程时间块</span>
+        <input type="date" id="sched-date" style="width:auto;font-size:13px;padding:6px 10px;min-height:auto" onchange="loadSchedule()">
+    </div>
+    <div class="timeline" id="sched-timeline"></div>
+    <button class="btn btn-outline btn-block btn-sm mt-8" onclick="openBlockSheet()">+ 添加时间块</button>
+
+    <!-- 打卡 -->
+    <div class="section-title mt-12 flex flex-between flex-center">
+        <span>每日打卡</span>
+        <button class="btn btn-sm btn-outline" onclick="openCheckinItemSheet()">+ 项目</button>
+    </div>
+    <div class="checkin-grid" id="checkin-grid"></div>
+</div>
+
+<!-- 3. 英语学习 -->
+<div class="tab-content" id="tab-english">
+    <!-- 每日对话 -->
+    <div class="section-title">每日情景对话</div>
+    <div class="dialogue-scroll" id="dialogue-tabs"></div>
+    <div id="dialogue-content"></div>
+
+    <!-- 词汇卡片 -->
+    <div class="section-title mt-12">词汇卡片 <span class="text-muted text-sm">(点击翻转)</span></div>
+    <div class="vocab-grid" id="vocab-grid"></div>
+
+    <!-- 口语复述 -->
+    <div class="section-title mt-12">口语复述</div>
+    <div class="dialogue-scroll" id="retell-tabs"></div>
+    <div id="retell-content"></div>
+
+    <!-- 情景角色扮演 -->
+    <div class="section-title mt-12">情景角色扮演</div>
+    <div id="roleplay-list"></div>
+</div>
+
+<!-- 4. 工具（单词查询 + 单词本） -->
+<div class="tab-content" id="tab-tools">
+    <div class="section-title">疑难单词查询</div>
+    <div class="card">
+        <div class="flex gap-8">
+            <input type="text" id="word-input" placeholder="输入单词，如 commute" style="flex:1" onkeydown="if(event.key==='Enter')lookupWord()">
+            <button class="btn btn-primary btn-sm" onclick="lookupWord()">查询</button>
+        </div>
+        <div id="word-result"></div>
+    </div>
+
+    <div class="section-title mt-12 flex flex-between flex-center">
+        <span>我的单词本</span>
+        <button class="btn btn-sm btn-primary" onclick="openVocabSheet()">+ 添加</button>
+    </div>
+    <div id="vocab-list"></div>
+</div>
+
+<!-- 底部导航 -->
+<div class="bottombar">
+    <div class="bottom-tab active" onclick="switchTab('dashboard')" data-tab="dashboard">
+        <div class="tab-icon">📊</div>
+        <div>概览</div>
+    </div>
+    <div class="bottom-tab" onclick="switchTab('workbench')" data-tab="workbench">
+        <div class="tab-icon">📋</div>
+        <div>工作台</div>
+    </div>
+    <div class="bottom-tab" onclick="switchTab('english')" data-tab="english">
+        <div class="tab-icon">📖</div>
+        <div>英语</div>
+    </div>
+    <div class="bottom-tab" onclick="switchTab('tools')" data-tab="tools">
+        <div class="tab-icon">🔧</div>
+        <div>工具</div>
+    </div>
+</div>
+
+<!-- 底部弹窗容器 -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="if(event.target===this)closeSheet()">
+    <div class="sheet" id="sheet-content"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let dialogues = [], vocabCards = [], roleplayScenarios = [], retellMaterials = [];
+let currentDialogue = null, currentRetell = null;
+
+// ========== 导航 ==========
+function switchTab(name) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.querySelectorAll('.bottom-tab').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.bottom-tab[data-tab="${name}"]`).classList.add('active');
+    if (name === 'dashboard') loadDashboard();
+    if (name === 'workbench') { loadTodos(); loadSchedule(); loadCheckin(); }
+    if (name === 'english') {
+        if (!dialogues.length) initEnglish();
+    }
+    if (name === 'tools') loadVocabBook();
+    window.scrollTo(0,0);
+}
+
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function formatDate(d) {
+    return (d instanceof Date ? d : new Date(d)).toISOString().split('T')[0];
+}
+
+// ========== 弹窗 ==========
+function openSheet(html) {
+    document.getElementById('sheet-content').innerHTML = html;
+    document.getElementById('sheet-overlay').classList.add('show');
+}
+function closeSheet() {
+    document.getElementById('sheet-overlay').classList.remove('show');
+}
+
+// ========== 仪表盘 ==========
+async function loadDashboard() {
+    const res = await fetch(`${API}/api/dashboard`); const data = await res.json();
+    document.getElementById('topbar-date').textContent = data.date;
+    document.getElementById('stats-row').innerHTML = [
+        {v:data.todos_pending,l:'待办',s:`${data.todos_completed} 完成`,c:'#4F46E5'},
+        {v:data.checkins_today_count,l:'打卡',s:'今日完成',c:'#F59E0B'},
+        {v:data.vocab_total,l:'单词',s:`${data.vocab_learned} 掌握`,c:'#10B981'}
+    ].map(s=>`<div class="stat-item"><div class="val" style="color:${s.c}">${s.v}</div><div class="lbl">${s.l}</div><div class="lbl">${s.s}</div></div>`).join('');
+    document.getElementById('dash-schedule').innerHTML = data.blocks_today.length
+        ? data.blocks_today.map(b=>`<div class="time-block"><div class="tb-time">${b.start_time}-${b.end_time}</div><div class="tb-title">${b.title}</div></div>`).join('')
+        : '<div class="empty">暂无日程</div>';
+    document.getElementById('dash-study').innerHTML = data.recent_study.length
+        ? data.recent_study.map(s=>`<div class="flex flex-between text-sm" style="padding:8px 0;border-bottom:1px solid var(--border)"><span>${s.module}</span><span class="text-muted">${s.log_date} · ${s.duration_min}min</span></div>`).join('')
+        : '<div class="empty">去学点什么吧 ✨</div>';
+}
+
+// ========== 待办 ==========
+async function loadTodos() {
+    const res = await fetch(`${API}/api/todos`); const list = await res.json();
+    if(!list.length){ document.getElementById('todo-list').innerHTML='<div class="empty">暂无待办</div>'; return; }
+    const priLabels = {high:'高',medium:'中',low:'低'};
+    const priCls = {high:'tag-high',medium:'tag-med',low:'tag-low'};
+    document.getElementById('todo-list').innerHTML = list.map(t=>`
+        <div class="todo-item ${t.done?'done':''}">
+            <input type="checkbox" class="todo-checkbox" ${t.done?'checked':''} onchange="toggleTodo(${t.id},${t.done?0:1})">
+            <div class="todo-info">
+                <div class="todo-title">${t.title}</div>
+                <div class="todo-meta">
+                    <span class="tag ${priCls[t.priority]}">${priLabels[t.priority]}</span>
+                    ${t.due_date?`<span class="text-muted text-sm">${t.due_date}</span>`:''}
+                </div>
+            </div>
+            <div class="todo-del" onclick="deleteTodo(${t.id})">×</div>
+        </div>
+    `).join('');
+}
+function openTodoSheet() {
+    openSheet(`
+        <div class="sheet-handle"></div><h3>新建任务</h3>
+        <div class="form-row"><label>任务</label><input id="t-title" placeholder="做什么？"></div>
+        <div class="form-row"><label>优先级</label><select id="t-pri"><option value="high">高</option><option value="medium" selected>中</option><option value="low">低</option></select></div>
+        <div class="form-row"><label>截止日期</label><input type="date" id="t-due"></div>
+        <div class="sheet-actions"><button class="btn btn-outline" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="submitTodo()">添加</button></div>
+    `);
+}
+async function submitTodo() {
+    const d = {title:document.getElementById('t-title').value,priority:document.getElementById('t-pri').value,due_date:document.getElementById('t-due').value||null};
+    if(!d.title){toast('请输入任务');return;}
+    await fetch(`${API}/api/todos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    closeSheet(); loadTodos(); toast('已添加');
+}
+async function toggleTodo(id,done){await fetch(`${API}/api/todos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({done})});loadTodos();}
+async function deleteTodo(id){await fetch(`${API}/api/todos/${id}`,{method:'DELETE'});loadTodos();}
+
+// ========== 日程 ==========
+async function loadSchedule() {
+    const d = document.getElementById('sched-date').value || formatDate(new Date());
+    document.getElementById('sched-date').value = d;
+    const res = await fetch(`${API}/api/schedule?block_date=${d}`); const list = await res.json();
+    if(!list.length){document.getElementById('sched-timeline').innerHTML='<div class="empty">暂无安排</div>';return;}
+    document.getElementById('sched-timeline').innerHTML = list.map(b=>`
+        <div class="time-block">
+            <div class="tb-time">${b.start_time} - ${b.end_time}</div>
+            <div class="tb-title">${b.title}</div>
+            ${b.notes?`<div class="tb-note">${b.notes}</div>`:''}
+            <div class="text-muted text-sm mt-8" onclick="deleteBlock(${b.id})" style="cursor:pointer;color:var(--danger)">删除</div>
+        </div>
+    `).join('');
+}
+function openBlockSheet() {
+    const d = document.getElementById('sched-date').value || formatDate(new Date());
+    openSheet(`
+        <div class="sheet-handle"></div><h3>添加时间块</h3>
+        <div class="form-row"><label>标题</label><input id="b-title" placeholder="如：英语口语练习"></div>
+        <div class="form-row"><label>日期</label><input type="date" id="b-date" value="${d}"></div>
+        <div class="form-row-inline">
+            <div class="form-row"><label>开始</label><input type="time" id="b-start" value="09:00"></div>
+            <div class="form-row"><label>结束</label><input type="time" id="b-end" value="10:00"></div>
+        </div>
+        <div class="form-row"><label>备注</label><input id="b-notes" placeholder="可选"></div>
+        <div class="sheet-actions"><button class="btn btn-outline" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="submitBlock()">添加</button></div>
+    `);
+}
+async function submitBlock() {
+    const d = {title:document.getElementById('b-title').value,block_date:document.getElementById('b-date').value,start_time:document.getElementById('b-start').value,end_time:document.getElementById('b-end').value,notes:document.getElementById('b-notes').value||null,category:'general'};
+    if(!d.title){toast('请输入标题');return;}
+    await fetch(`${API}/api/schedule`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    closeSheet(); loadSchedule(); toast('已添加');
+}
+async function deleteBlock(id){await fetch(`${API}/api/schedule/${id}`,{method:'DELETE'});loadSchedule();}
+
+// ========== 打卡 ==========
+async function loadCheckin() {
+    const today = formatDate(new Date());
+    const [itemsRes, checkinsRes, statsRes] = await Promise.all([
+        fetch(`${API}/api/checkin-items`),fetch(`${API}/api/checkins?checkin_date=${today}`),fetch(`${API}/api/checkins/stats`)
+    ]);
+    const items=await itemsRes.json(),checkins=await checkinsRes.json(),stats=await statsRes.json();
+    if(!items.length){document.getElementById('checkin-grid').innerHTML='<div class="empty" style="grid-column:1/-1">暂无打卡项目</div>';return;}
+    document.getElementById('checkin-grid').innerHTML = items.map(i=>{
+        const checked=checkins.find(c=>c.item_name===i.name&&c.done);
+        const stat=stats.find(s=>s.name===i.name);
+        return `<div class="checkin-card ${checked?'done':''}" onclick="toggleCheckin('${i.name}',${checked?0:1})"><div class="ci-icon">${checked?'✅':'⬜'}</div><div class="ci-name">${i.name}</div><div class="ci-count">累计 ${stat?stat.total_done:0} 次</div></div>`;
+    }).join('');
+}
+function openCheckinItemSheet() {
+    openSheet(`
+        <div class="sheet-handle"></div><h3>添加打卡项目</h3>
+        <div class="form-row"><label>名称</label><input id="c-name" placeholder="如：英语口语15分钟"></div>
+        <div class="sheet-actions"><button class="btn btn-outline" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="submitCheckinItem()">添加</button></div>
+    `);
+}
+async function submitCheckinItem() {
+    const name=document.getElementById('c-name').value;if(!name){toast('请输入名称');return;}
+    const r=await fetch(`${API}/api/checkin-items`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,color:'#4CAF50'})});
+    if(!r.ok){toast('已存在');return;}closeSheet();loadCheckin();toast('已添加');
+}
+async function toggleCheckin(name,done){
+    await fetch(`${API}/api/checkins/toggle`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({checkin_date:formatDate(new Date()),item_name:name,done})});
+    loadCheckin(); if(done) toast('打卡成功 🔥');
+}
+
+// ========== 英语学习 ==========
+async function initEnglish() {
+    await Promise.all([loadDialogues(),loadVocabCards(),loadRetell(),loadRoleplay()]);
+    if(dialogues.length) selectDialogue(dialogues[0].id);
+}
+async function loadDialogues(){const r=await fetch(`${API}/api/dialogues`);dialogues=await r.json();renderDialogueTabs();}
+function renderDialogueTabs(){document.getElementById('dialogue-tabs').innerHTML=dialogues.map(d=>`<div class="dialogue-tab ${currentDialogue?.id===d.id?'active':''}" onclick="selectDialogue(${d.id})">${d.topic}</div>`).join('');}
+function selectDialogue(id){
+    currentDialogue=dialogues.find(d=>d.id===id);renderDialogueTabs();
+    const d=currentDialogue;
+    let h=`<div class="card"><strong style="font-size:16px">${d.topic}</strong><div class="text-muted text-sm mt-8">${d.scenario}</div>`;
+    h+=d.dialogue.map(l=>`<div class="dialogue-line"><span class="sp ${l.speaker==='You'?'you':''}">${l.speaker}:</span> ${l.text}</div>`).join('');
+    h+=`<div class="mt-12"><strong>关键短语</strong></div>`;
+    h+=d.key_phrases.map(p=>`<div style="padding:10px;background:#F9FAFB;border-radius:8px;margin-top:6px"><div class="flex flex-between"><strong>${p.phrase}</strong><span class="text-muted text-sm">${p.meaning}</span></div><div class="text-sm text-muted mt-4">${p.usage}</div></div>`).join('');
+    h+=`<button class="btn btn-success btn-sm mt-12" onclick="logStudy('每日对话:${d.topic}',10)">✓ 完成学习</button></div>`;
+    document.getElementById('dialogue-content').innerHTML=h;
+}
+async function loadVocabCards(){const r=await fetch(`${API}/api/vocab-cards`);vocabCards=await r.json();
+    document.getElementById('vocab-grid').innerHTML=vocabCards.map((c,i)=>`
+        <div class="vocab-card" id="vc-${i}" onclick="flipCard(${i})">
+            <div class="vc-badge badge-${c.difficulty==='hard'?'hard':c.difficulty==='easy'?'easy':'med'}">${c.difficulty}</div>
+            <div class="vc-word">${c.word}</div><div class="vc-phonetic">${c.phonetic||''}</div>
+            <div class="vc-back"><div><strong>释义</strong> ${c.meaning}</div><div class="text-muted text-sm mt-4"><strong>例句</strong> ${c.example}</div>
+            <button class="btn btn-sm btn-primary mt-8" onclick="event.stopPropagation();addToVocab('${c.word}','${c.meaning}','${c.phonetic}','${c.example}','${c.difficulty}')">加入单词本</button></div>
+        </div>`).join('');}
+function flipCard(i){document.getElementById('vc-'+i).classList.toggle('flipped');}
+async function loadRetell(){const r=await fetch(`${API}/api/retell`);retellMaterials=await r.json();if(!currentRetell)currentRetell=retellMaterials[0];renderRetellTabs();renderRetellContent();}
+function renderRetellTabs(){document.getElementById('retell-tabs').innerHTML=retellMaterials.map(r=>`<div class="dialogue-tab ${currentRetell?.id===r.id?'active':''}" onclick="selectRetell(${r.id})">${r.title}</div>`).join('');}
+function selectRetell(id){currentRetell=retellMaterials.find(r=>r.id===id);renderRetellTabs();renderRetellContent();}
+function renderRetellContent(){
+    const r=currentRetell;
+    let h=`<div class="card"><strong>${r.title}</strong> <span class="tag tag-med" style="font-size:10px">${r.difficulty}</span>`;
+    h+=`<div style="line-height:1.8;margin-top:10px;font-size:14px">${r.text}</div>`;
+    h+=`<div class="mt-12"><strong>复述要点：</strong></div><ul style="padding-left:20px;font-size:14px">${r.key_points.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+    h+=`<div style="margin-top:10px;padding:10px;background:#FEF3C7;border-radius:8px;font-size:13px">💡 先读2遍，然后不看屏幕用自己的话复述。录音回听效果更好。</div>`;
+    h+=`<button class="btn btn-success btn-sm mt-12" onclick="logStudy('口语复述:${r.title}',15)">✓ 完成练习</button></div>`;
+    document.getElementById('retell-content').innerHTML=h;
+}
+async function loadRoleplay(){const r=await fetch(`${API}/api/roleplay`);roleplayScenarios=await r.json();
+    document.getElementById('roleplay-list').innerHTML=roleplayScenarios.map(s=>`
+        <div class="scenario-card" onclick="openRoleplaySheet(${s.id})">
+            <div class="sc-title">🎭 ${s.title}</div><div class="sc-desc">角色：${s.role} | ${s.setting}</div>
+            <div class="sc-tips">💡 ${s.tips}</div>
+        </div>`).join('');}
+function openRoleplaySheet(id){
+    const s=roleplayScenarios.find(r=>r.id===id);
+    openSheet(`
+        <div class="sheet-handle"></div><h3>🎭 ${s.title}</h3>
+        <div class="form-row"><label>角色</label><div style="padding:8px 12px;background:#F9FAFB;border-radius:8px">${s.role}</div></div>
+        <div class="form-row"><label>场景</label><div style="padding:8px 12px;background:#F9FAFB;border-radius:8px">${s.setting}</div></div>
+        <div class="form-row"><label>💡 推荐表达</label><div style="padding:8px 12px;background:#FEF3C7;border-radius:8px">${s.tips}</div></div>
+        <div class="form-row"><label>你的台词</label><textarea id="rp-text" rows="4" placeholder="用英文写出你会说的话..."></textarea></div>
+        <div class="sheet-actions"><button class="btn btn-outline" onclick="closeSheet()">关闭</button><button class="btn btn-success" onclick="submitRoleplay(${s.id})">完成</button></div>
+    `);
+}
+function submitRoleplay(id){
+    const s=roleplayScenarios.find(r=>r.id===id);
+    const t=document.getElementById('rp-text').value.trim();
+    if(t){logStudy(`角色扮演:${s.title}`,10);closeSheet();}else{toast('请先写台词');}
+}
+
+// ========== 单词查询 ==========
+async function lookupWord(w){
+    const word=w||document.getElementById('word-input').value.trim();if(!word)return;
+    const r=await fetch(`${API}/api/word-explain/${encodeURIComponent(word)}`);const d=await r.json();
+    document.getElementById('word-result').innerHTML=`
+        <div style="background:#EFF6FF;border-radius:10px;padding:14px;margin-top:12px;border-left:4px solid var(--primary)">
+            <div style="font-size:18px;font-weight:700;color:var(--primary-dark)">${d.word} ${d.phonetic?`<span style="color:var(--text-muted);font-size:14px">${d.phonetic}</span>`:''}</div>
+            ${d.meaning?`<div class="mt-8"><strong>释义：</strong>${d.meaning}</div>`:''}
+            ${d.example?`<div class="mt-8 text-muted text-sm">📝 ${d.example}</div>`:''}
+            <div class="mt-12" style="padding-top:10px;border-top:1px solid var(--border);font-size:14px">${d.explanation}</div>
+            <button class="btn btn-sm btn-primary mt-8" onclick="addToVocab('${d.word}','${(d.meaning||'').replace(/'/g,"\\'")}','${(d.phonetic||'').replace(/'/g,"\\'")}','${(d.example||'').replace(/'/g,"\\'")}','medium')">加入单词本</button>
+        </div>`;
+    if(!w)document.getElementById('word-input').value='';
+}
+
+// ========== 单词本 ==========
+async function loadVocabBook(){
+    const r=await fetch(`${API}/api/vocabulary`);const list=await r.json();
+    if(!list.length){document.getElementById('vocab-list').innerHTML='<div class="empty">暂无单词，去查询或词汇卡片中添加</div>';return;}
+    document.getElementById('vocab-list').innerHTML=list.map(v=>`
+        <div class="card">
+            <div class="flex flex-between flex-center">
+                <div>
+                    <div class="flex gap-8 flex-center"><strong style="font-size:16px;color:var(--primary-dark)">${v.word}</strong>${v.phonetic?`<span class="text-muted text-sm">${v.phonetic}</span>`:''}<span class="tag ${v.learned?'tag-low':'tag-med'}">${v.learned?'已掌握':'学习中'}</span></div>
+                    <div class="text-sm mt-4">${v.meaning||''}</div>${v.example?`<div class="text-sm text-muted">${v.example}</div>`:''}
+                </div>
+                <div class="flex gap-4"><button class="btn btn-sm ${v.learned?'btn-outline':'btn-success'}" onclick="toggleLearned(${v.id},${v.learned?0:1})">${v.learned?'取消':'掌握'}</button><button class="btn btn-sm btn-danger" onclick="deleteVocab(${v.id})">删</button></div>
+            </div>
+        </div>`).join('');}
+function openVocabSheet(){
+    openSheet(`
+        <div class="sheet-handle"></div><h3>添加单词</h3>
+        <div class="form-row"><label>单词</label><input id="v-word" placeholder="如 commute"></div>
+        <div class="form-row"><label>释义</label><input id="v-meaning" placeholder="中文释义"></div>
+        <div class="form-row"><label>音标</label><input id="v-phonetic" placeholder="/kəˈmjuːt/"></div>
+        <div class="form-row"><label>例句</label><input id="v-example" placeholder="例句"></div>
+        <div class="form-row"><label>难度</label><select id="v-diff"><option value="easy">简单</option><option value="medium" selected>中等</option><option value="hard">困难</option></select></div>
+        <div class="sheet-actions"><button class="btn btn-outline" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="submitVocab()">添加</button></div>
+    `);
+}
+async function submitVocab(){
+    const d={word:document.getElementById('v-word').value,meaning:document.getElementById('v-meaning').value,phonetic:document.getElementById('v-phonetic').value,example:document.getElementById('v-example').value,difficulty:document.getElementById('v-diff').value};
+    if(!d.word){toast('请输入单词');return;}
+    await fetch(`${API}/api/vocabulary`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    closeSheet();loadVocabBook();toast('已添加');
+}
+async function addToVocab(word,meaning,phonetic,example,difficulty){
+    await fetch(`${API}/api/vocabulary`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word,meaning,phonetic,example,difficulty})});
+    toast(`"${word}" 已加入单词本`);
+}
+async function toggleLearned(id,learned){await fetch(`${API}/api/vocabulary/${id}/learned?learned=${learned}`,{method:'PUT'});loadVocabBook();}
+async function deleteVocab(id){await fetch(`${API}/api/vocabulary/${id}`,{method:'DELETE'});loadVocabBook();toast('已删除');}
+
+// ========== 学习记录 ==========
+async function logStudy(module,duration){
+    await fetch(`${API}/api/study-log`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({module,duration_min:duration})});
+    toast('学习记录已保存');
+}
+
+// ========== 初始化 ==========
+document.getElementById('sched-date').value = formatDate(new Date());
+loadDashboard();
+// 预加载英语数据
+fetch(`${API}/api/dialogues`).then(r=>r.json()).then(d=>{dialogues=d;renderDialogueTabs();if(d.length)selectDialogue(d[0].id);});
+fetch(`${API}/api/vocab-cards`).then(r=>r.json()).then(d=>{vocabCards=d;document.getElementById('vocab-grid').innerHTML=vocabCards.map((c,i)=>`<div class="vocab-card" id="vc-${i}" onclick="flipCard(${i})"><div class="vc-badge badge-${c.difficulty==='hard'?'hard':c.difficulty==='easy'?'easy':'med'}">${c.difficulty}</div><div class="vc-word">${c.word}</div><div class="vc-phonetic">${c.phonetic||''}</div><div class="vc-back"><div><strong>释义</strong> ${c.meaning}</div><div class="text-muted text-sm mt-4"><strong>例句</strong> ${c.example}</div><button class="btn btn-sm btn-primary mt-8" onclick="event.stopPropagation();addToVocab('${c.word}','${c.meaning}','${c.phonetic}','${c.example}','${c.difficulty}')">加入单词本</button></div></div>`).join('');});
+fetch(`${API}/api/retell`).then(r=>r.json()).then(d=>{retellMaterials=d;if(!currentRetell)currentRetell=d[0];renderRetellTabs();renderRetellContent();});
+fetch(`${API}/api/roleplay`).then(r=>r.json()).then(d=>{roleplayScenarios=d;document.getElementById('roleplay-list').innerHTML=d.map(s=>`<div class="scenario-card" onclick="openRoleplaySheet(${s.id})"><div class="sc-title">🎭 ${s.title}</div><div class="sc-desc">角色：${s.role} | ${s.setting}</div><div class="sc-tips">💡 ${s.tips}</div></div>`).join('');});
+
+// Service Worker 注册
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+</script>
+</body>
+</html>
