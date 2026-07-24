@@ -649,70 +649,169 @@ function speakSentence(idx) {
     speechSynthesis.speak(u);
 }
 
-// 录音 + 识别
+// 录音 + 识别（全局状态版）
+let currentRecIdx = null;     // 当前正在录音的句子索引
+let recStartTime = 0;
+let recognitionTimeout = null;
+
+function resetPronResult(idx) {
+    const scoreEl = document.getElementById('pron-score-' + idx);
+    const tipEl = document.getElementById('pron-tip-' + idx);
+    if (scoreEl) {
+        scoreEl.className = 'pron-score';
+        scoreEl.innerHTML = '';
+    }
+    if (tipEl) tipEl.textContent = '';
+}
+
 function toggleRecord(idx) {
     if (isRecording) {
-        stopRecording();
+        // 当前有录音，先停止当前录音
+        stopRecognition();
+        // 如果点的是同一个句子，就当作“确认完成”
+        if (currentRecIdx === idx) {
+            return;
+        }
+        // 如果点了不同句子，先停止旧的，等结束后再启动新的
+        setTimeout(() => startRecognition(idx), 300);
     } else {
-        startRecording(idx);
+        resetPronResult(idx);
+        startRecognition(idx);
     }
 }
 
-function startRecording(idx) {
+function updateRecBtn(idx, recording) {
+    const btn = document.getElementById('rec-btn-' + idx);
+    if (!btn) return;
+    if (recording) {
+        btn.classList.add('recording');
+        btn.textContent = '⏹️ 停止录音';
+    } else {
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 跟读录音';
+    }
+}
+
+function startRecognition(idx) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-        toast('浏览器不支持语音识别，请用 Chrome');
+        toast('浏览器不支持语音识别，请用 Chrome 或 Safari');
         return;
     }
+    // 清理旧的识别器
+    if (recognition) {
+        try { recognition.stop(); } catch(e){}
+        recognition = null;
+    }
+    clearTimeout(recognitionTimeout);
+
     const originalText = document.getElementById('pron-original-' + idx).textContent;
     recognition = new SR();
     recognition.lang = 'en-US';
     recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.interimResults = true;   // 实时显示识别过程
+    recognition.maxAlternatives = 1;
 
-    const btn = document.getElementById('rec-btn-' + idx);
-    btn.classList.add('recording');
-    btn.textContent = '⏹️ 停止录音';
+    let gotResult = false;
+    currentRecIdx = idx;
+    recStartTime = Date.now();
+
+    updateRecBtn(idx, true);
     isRecording = true;
-    document.getElementById('pron-tip-' + idx).textContent = '正在录音... 说完后点停止';
+    document.getElementById('pron-tip-' + idx).textContent = '正在听... 请清晰地说出句子';
 
     recognition.onresult = function(event) {
-        const spoken = event.results[0][0].transcript.toLowerCase().trim();
-        scorePronunciation(idx, originalText, spoken);
+        let interim = '';
+        let final = '';
+        for (let i = 0; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                final += event.results[i][0].transcript;
+            } else {
+                interim += event.results[i][0].transcript;
+            }
+        }
+        if (interim) {
+            document.getElementById('pron-tip-' + idx).textContent = '识别中：' + interim;
+        }
+        if (final) {
+            gotResult = true;
+            clearTimeout(recognitionTimeout);
+            scorePronunciation(idx, originalText, final.trim().toLowerCase());
+            finishRecognition();
+        }
     };
 
     recognition.onerror = function(event) {
-        btn.classList.remove('recording');
-        btn.textContent = '🎤 跟读录音';
+        clearTimeout(recognitionTimeout);
+        if (event.error === 'aborted') return;
+        updateRecBtn(idx, false);
         isRecording = false;
+        currentRecIdx = null;
         if (event.error === 'not-allowed') {
             toast('请允许麦克风权限');
+        } else if (event.error === 'no-speech') {
+            document.getElementById('pron-tip-' + idx).textContent = '没听清，请再试一次';
+            toast('没听清，请再试一次');
         } else {
-            toast('识别失败: ' + event.error);
+            document.getElementById('pron-tip-' + idx).textContent = '识别失败，请重试';
+            toast('识别失败，请重试');
         }
     };
 
     recognition.onend = function() {
-        btn.classList.remove('recording');
-        btn.textContent = '🎤 跟读录音';
+        clearTimeout(recognitionTimeout);
+        if (!gotResult) {
+            document.getElementById('pron-tip-' + idx).textContent = '没听清，请再试一次';
+        }
+        updateRecBtn(idx, false);
         isRecording = false;
+        currentRecIdx = null;
+        recognition = null;
     };
 
     try {
         recognition.start();
+        // 15秒超时保护，避免一直卡住
+        recognitionTimeout = setTimeout(() => {
+            document.getElementById('pron-tip-' + idx).textContent = '录音超时，请再试';
+            stopRecognition();
+        }, 15000);
     } catch(e) {
         toast('启动录音失败');
-        btn.classList.remove('recording');
-        btn.textContent = '🎤 跟读录音';
+        updateRecBtn(idx, false);
         isRecording = false;
+        currentRecIdx = null;
     }
 }
 
-function stopRecording() {
+function stopRecognition() {
+    clearTimeout(recognitionTimeout);
     if (recognition) {
-        recognition.stop();
+        try { recognition.stop(); } catch(e){}
+    }
+    if (currentRecIdx !== null) {
+        updateRecBtn(currentRecIdx, false);
     }
     isRecording = false;
+    currentRecIdx = null;
+    recognition = null;
+}
+
+function finishRecognition() {
+    clearTimeout(recognitionTimeout);
+    if (recognition) {
+        try { recognition.stop(); } catch(e){}
+    }
+    if (currentRecIdx !== null) {
+        updateRecBtn(currentRecIdx, false);
+    }
+    isRecording = false;
+    currentRecIdx = null;
+    recognition = null;
+}
+
+function stopRecording() {
+    stopRecognition();
 }
 
 // 发音评分 - 对比原文和识别结果
@@ -720,14 +819,12 @@ function scorePronunciation(idx, original, spoken) {
     const origWords = original.toLowerCase().replace(/[^a-z\s']/g, '').split(/\s+/).filter(w => w.length > 0);
     const spokenWords = spoken.toLowerCase().replace(/[^a-z\s']/g, '').split(/\s+/).filter(w => w.length > 0);
 
-    // 逐词匹配（考虑顺序）
     let correct = 0, wrong = [], missed = [];
     let si = 0;
     let highlightedText = '';
 
     for (let i = 0; i < origWords.length; i++) {
         const target = origWords[i];
-        // 在spokenWords当前位置附近找匹配
         let found = false;
         for (let j = si; j < Math.min(si + 3, spokenWords.length); j++) {
             if (spokenWords[j] === target || levenshtein(spokenWords[j], target) <= 1) {
@@ -739,10 +836,10 @@ function scorePronunciation(idx, original, spoken) {
             }
         }
         if (!found) {
-            // 检查是否说了一个错词
             if (si < spokenWords.length && spokenWords[si] !== target) {
                 wrong.push(target);
                 highlightedText += `<span class="word-wrong">${target}</span> `;
+                si++;
             } else {
                 missed.push(target);
                 highlightedText += `<span class="word-miss">${target}</span> `;
@@ -755,10 +852,8 @@ function scorePronunciation(idx, original, spoken) {
     const textEl = document.getElementById('pron-text-' + idx);
     const tipEl = document.getElementById('pron-tip-' + idx);
 
-    // 显示高亮文本
     textEl.innerHTML = highlightedText.trim();
 
-    // 评分显示
     let cls = score >= 80 ? 'good' : score >= 50 ? 'mid' : 'bad';
     let emoji = score >= 80 ? '🎉' : score >= 50 ? '💪' : '📚';
     let msg = score >= 80 ? '发音很棒！' : score >= 50 ? '还不错，继续练' : '多听几遍再试';
@@ -777,13 +872,13 @@ function scorePronunciation(idx, original, spoken) {
     `;
     tipEl.textContent = detail || '全部正确！';
 
-    // 恢复原文显示（3秒后）
+    // 5秒后恢复原文
     setTimeout(() => {
         textEl.innerHTML = original;
     }, 5000);
 }
 
-// 莱文斯坦距离 - 用于模糊匹配单词
+// 莱文斯坦距离
 function levenshtein(a, b) {
     if (a.length === 0) return b.length;
     if (b.length === 0) return a.length;
