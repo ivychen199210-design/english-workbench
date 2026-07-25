@@ -1255,6 +1255,9 @@ async function loadVocabCards(){const r=await fetch(`${API}/api/vocab-cards`);vo
         <div class="vocab-card" id="vc-${i}" onclick="flipCard(${i})">
             <div class="vc-badge badge-${c.difficulty==='hard'?'hard':c.difficulty==='easy'?'easy':'med'}">${c.difficulty}</div>
             <div class="vc-word">${c.word}</div><div class="vc-phonetic">${c.phonetic||''}</div>
+            <div class="vc-front-actions" style="margin-top:8px">
+                <button class="btn btn-sm btn-play" onclick="event.stopPropagation();playVocabWord('${c.word.replace(/'/g,"\\'")}')">🔊 发音</button>
+            </div>
             <div class="vc-back"><div><strong>释义</strong> ${c.meaning}</div><div class="text-muted text-sm mt-4"><strong>例句</strong> ${c.example}</div>
             <div style="display:flex;gap:8px;margin-top:12px">
                 <button class="btn btn-sm btn-play" onclick="event.stopPropagation();playVocabWord('${c.word.replace(/'/g,"\\'")}')">🔊 发音</button>
