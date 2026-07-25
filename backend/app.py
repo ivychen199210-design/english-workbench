@@ -596,6 +596,105 @@ KIDS_GAMES = [
 ]
 
 
+# ==================== BBC 英语学习素材 ====================
+BBC_RESOURCES = [
+    {
+        "name": "6 Minute English",
+        "emoji": "6MIN",
+        "desc": "BBC经典英语学习节目，每期6分钟聊一个话题。两位主持人轻松对话，穿插关键词汇讲解。适合中级以上学习者。",
+        "color": "#DBEAFE",
+        "episodes": [
+            {"title": "6 Minute English 2024 合集", "bvid": "BV1jYC6YREbg", "desc": "2024年全年合集，涵盖科技/文化/健康等话题"},
+            {"title": "6 Minute English 2023 合集", "bvid": "BV1ej411L7Fh", "desc": "2023年合集，经典话题回顾"},
+        ]
+    },
+    {
+        "name": "News Review",
+        "emoji": "NEWS",
+        "desc": "BBC新闻热点学词汇，每期分析一则真实新闻，讲解关键词汇和表达。适合中高级学习者。",
+        "color": "#FEF3C7",
+        "episodes": [
+            {"title": "BBC Global News Podcast (每日更新)", "bvid": "BV122ge6NETp", "desc": "每日BBC全球新闻播客，练听力+了解时事"},
+            {"title": "BBC Newsround 2025 合集", "bvid": "BV1fgYhzQEbY", "desc": "BBC儿童新闻，语速慢用词简单，适合中初级"},
+        ]
+    },
+]
+
+# ==================== 影子跟读内置素材 ====================
+SHADOWING_MATERIALS = [
+    {
+        "id": 1,
+        "title": "Daily Routine",
+        "level": "Easy",
+        "sentences": [
+            "I wake up at seven o'clock every morning.",
+            "First, I brush my teeth and wash my face.",
+            "Then I have breakfast with my family.",
+            "After breakfast, I get dressed for work.",
+            "I usually leave the house at eight thirty.",
+            "My commute takes about forty minutes.",
+        ],
+        "tip": "Slow down on 'usually' and 'commute'. Pay attention to linking: 'wake up at' → 'wake-up-at'."
+    },
+    {
+        "id": 2,
+        "title": "At a Restaurant",
+        "level": "Easy",
+        "sentences": [
+            "I'd like to make a reservation for two people.",
+            "We have a table available by the window.",
+            "Could I see the menu, please?",
+            "I'll have the grilled chicken with vegetables.",
+            "The food here is absolutely delicious.",
+            "Can we get the bill when you have a moment?",
+        ],
+        "tip": "Focus on polite intonation. 'Could I...' and 'I'd like...' should sound gentle, not demanding."
+    },
+    {
+        "id": 3,
+        "title": "Talking About Weather",
+        "level": "Medium",
+        "sentences": [
+            "It looks like it's going to rain this afternoon.",
+            "The temperature has been rising steadily all week.",
+            "We had a thunderstorm last night that woke everyone up.",
+            "I prefer autumn because the weather is mild and comfortable.",
+            "The forecast says we might get some snow tomorrow.",
+            "It's absolutely freezing outside, don't forget your coat.",
+        ],
+        "tip": "Practice linking words: 'it's going to' → 'it's gonna'. Watch the rising intonation on questions."
+    },
+    {
+        "id": 4,
+        "title": "Job Interview",
+        "level": "Medium",
+        "sentences": [
+            "I've been working in marketing for over five years.",
+            "My greatest strength is my ability to work under pressure.",
+            "I'm particularly interested in the company's international expansion.",
+            "Could you tell me more about the day-to-day responsibilities?",
+            "I believe my experience aligns well with this position.",
+            "Thank you for taking the time to meet with me today.",
+        ],
+        "tip": "Emphasize key words: 'five years', 'greatest strength', 'particularly interested'. Sound confident but not arrogant."
+    },
+    {
+        "id": 5,
+        "title": "Giving a Presentation",
+        "level": "Hard",
+        "sentences": [
+            "Good morning everyone, thank you for being here today.",
+            "I'd like to start by giving you a brief overview of our project.",
+            "As you can see from the data, our revenue has grown significantly.",
+            "The key takeaway here is that customer satisfaction has improved.",
+            "I'd be happy to answer any questions you might have.",
+            "Let me conclude by summarizing the main points we've covered.",
+        ],
+        "tip": "Pause briefly between sentences. Use hand gestures to emphasize points. Vary your pitch to keep it engaging."
+    },
+]
+
+
 # ==================== 数据模型 ====================
 class TodoCreate(BaseModel):
     title: str
@@ -741,6 +840,23 @@ def get_kids_games():
 def get_kids_shows():
     """获取儿童动画节目数据"""
     return KIDS_SHOWS
+
+@app.get("/api/bbc")
+def get_bbc_resources():
+    """获取BBC英语学习资源"""
+    return BBC_RESOURCES
+
+@app.get("/api/shadowing")
+def get_shadowing_materials():
+    """获取影子跟读素材"""
+    return SHADOWING_MATERIALS
+
+@app.get("/api/shadowing/{sid}")
+def get_shadowing_material(sid: int):
+    for m in SHADOWING_MATERIALS:
+        if m["id"] == sid:
+            return m
+    raise HTTPException(404, "Material not found")
 
 
 @app.get("/api/word-explain/{word}")

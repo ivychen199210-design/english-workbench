@@ -402,31 +402,61 @@
 
 <!-- 3. 英语学习 -->
 <div class="tab-content" id="tab-english">
-    <!-- 发音练习（核心新功能） -->
-    <div class="section-title">🎤 发音练习</div>
-    <div class="card" id="pronunciation-card">
-        <div class="text-muted text-sm mb-12">选一句对话，听标准发音 → 跟读录音 → AI 评分</div>
-        <div class="dialogue-scroll" id="pron-dialogue-tabs"></div>
-        <div id="pron-sentences"></div>
+    <!-- 子导航 -->
+    <div class="dialogue-scroll" id="english-subtabs" style="margin-bottom:16px">
+        <div class="dialogue-tab active" onclick="switchEnglishSub('pronunciation', this)">🎤 Pronunciation</div>
+        <div class="dialogue-tab" onclick="switchEnglishSub('dialogue', this)">💬 Dialogue</div>
+        <div class="dialogue-tab" onclick="switchEnglishSub('shadowing', this)">🎧 Shadowing</div>
+        <div class="dialogue-tab" onclick="switchEnglishSub('bbc', this)">📡 BBC News</div>
+        <div class="dialogue-tab" onclick="switchEnglishSub('vocab', this)">📇 Vocab</div>
+        <div class="dialogue-tab" onclick="switchEnglishSub('retell', this)">🔁 Retell</div>
+        <div class="dialogue-tab" onclick="switchEnglishSub('roleplay', this)">🎭 Roleplay</div>
     </div>
 
-    <!-- 每日对话 -->
-    <div class="section-title mt-12">每日情景对话</div>
-    <div class="dialogue-scroll" id="dialogue-tabs"></div>
-    <div id="dialogue-content"></div>
+    <!-- Pronunciation -->
+    <div id="eng-pronunciation">
+        <div class="card">
+            <div class="text-muted text-sm mb-12">选一句对话，听标准发音 → 跟读录音 → AI 评分</div>
+            <div class="dialogue-scroll" id="pron-dialogue-tabs"></div>
+            <div id="pron-sentences"></div>
+        </div>
+    </div>
 
-    <!-- 词汇卡片 -->
-    <div class="section-title mt-12">词汇卡片 <span class="text-muted text-sm">(点击翻转)</span></div>
-    <div class="vocab-grid" id="vocab-grid"></div>
+    <!-- Dialogue -->
+    <div id="eng-dialogue" style="display:none">
+        <div class="dialogue-scroll" id="dialogue-tabs"></div>
+        <div id="dialogue-content"></div>
+    </div>
 
-    <!-- 口语复述 -->
-    <div class="section-title mt-12">口语复述</div>
-    <div class="dialogue-scroll" id="retell-tabs"></div>
-    <div id="retell-content"></div>
+    <!-- Shadowing -->
+    <div id="eng-shadowing" style="display:none">
+        <div class="card" style="background:#ECFDF5;border-left:4px solid var(--success)">
+            <div style="font-size:14px"><strong>💡 影子跟读法:</strong> 听一句 → 立刻跟读 → 模仿语调语速。每天10分钟，两周见效。</div>
+        </div>
+        <div class="dialogue-scroll" id="shadowing-tabs"></div>
+        <div id="shadowing-content"></div>
+    </div>
 
-    <!-- 情景角色扮演 -->
-    <div class="section-title mt-12">情景角色扮演</div>
-    <div id="roleplay-list"></div>
+    <!-- BBC News -->
+    <div id="eng-bbc" style="display:none">
+        <div id="bbc-list"></div>
+    </div>
+
+    <!-- Vocab -->
+    <div id="eng-vocab" style="display:none">
+        <div class="vocab-grid" id="vocab-grid"></div>
+    </div>
+
+    <!-- Retell -->
+    <div id="eng-retell" style="display:none">
+        <div class="dialogue-scroll" id="retell-tabs"></div>
+        <div id="retell-content"></div>
+    </div>
+
+    <!-- Roleplay -->
+    <div id="eng-roleplay" style="display:none">
+        <div id="roleplay-list"></div>
+    </div>
 </div>
 
 <!-- 4. 工具（单词查询 + 单词本） -->
@@ -547,6 +577,7 @@ function switchTab(name) {
     if (name === 'workbench') { loadTodos(); loadSchedule(); loadCheckin(); }
     if (name === 'english') {
         if (!dialogues.length) initEnglish();
+        switchEnglishSub('pronunciation', document.querySelector('#english-subtabs .dialogue-tab'));
     }
     if (name === 'tools') loadVocabBook();
     if (name === 'kids') loadKidsData();
@@ -1000,6 +1031,148 @@ function levenshtein(a, b) {
 }
 
 // ========== 英语学习 ==========
+function switchEnglishSub(sub, el) {
+    ['pronunciation','dialogue','shadowing','bbc','vocab','retell','roleplay'].forEach(s => {
+        document.getElementById('eng-' + s).style.display = 'none';
+    });
+    document.getElementById('eng-' + sub).style.display = 'block';
+    document.querySelectorAll('#english-subtabs .dialogue-tab').forEach(t => t.classList.remove('active'));
+    if (el) el.classList.add('active');
+    if (sub === 'bbc' && !bbcLoaded) loadBBC();
+    if (sub === 'shadowing' && !shadowingLoaded) loadShadowing();
+}
+
+// BBC News
+let bbcLoaded = false, bbcData = [];
+async function loadBBC() {
+    if (bbcLoaded) return;
+    bbcData = await fetch(`${API}/api/bbc`).then(r=>r.json());
+    bbcLoaded = true;
+    renderBBC();
+}
+function renderBBC() {
+    document.getElementById('bbc-list').innerHTML = bbcData.map((show, si) => `
+        <div class="card" style="border-left:4px solid ${show.color};margin-bottom:12px">
+            <div style="font-size:16px;font-weight:700">${show.emoji} ${show.name}</div>
+            <div class="text-sm text-muted mt-8">${show.desc}</div>
+            <div style="margin-top:12px">
+                ${show.episodes.map((ep, ei) => {
+                    const vid = `bbc-${si}-${ei}`;
+                    const bid = `bbc-btn-${si}-${ei}`;
+                    return `
+                        <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+                            <div class="flex flex-between flex-center">
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-weight:600;font-size:14px">📺 ${ep.title}</div>
+                                    <div class="text-sm text-muted mt-4">${ep.desc}</div>
+                                </div>
+                                <button class="btn btn-sm btn-primary" id="${bid}" onclick="toggleBiliVideo('${vid}','${bid}','${ep.bvid}')">▶️</button>
+                            </div>
+                            <div id="${vid}" style="margin-top:8px"></div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+// 影子跟读
+let shadowingLoaded = false, shadowingData = [];
+async function loadShadowing() {
+    if (shadowingLoaded) return;
+    shadowingData = await fetch(`${API}/api/shadowing`).then(r=>r.json());
+    shadowingLoaded = true;
+    renderShadowingTabs();
+    selectShadowing(1);
+}
+function renderShadowingTabs() {
+    document.getElementById('shadowing-tabs').innerHTML = shadowingData.map(s =>
+        `<div class="dialogue-tab" onclick="selectShadowing(${s.id})">${s.title} <span class="text-muted" style="font-size:10px">${s.level}</span></div>`
+    ).join('');
+}
+function selectShadowing(id) {
+    const m = shadowingData.find(s => s.id === id);
+    if (!m) return;
+    document.querySelectorAll('#shadowing-tabs .dialogue-tab').forEach((t,i) => {
+        t.classList.toggle('active', shadowingData[i].id === id);
+    });
+    let html = `<div class="card">
+        <div style="font-size:16px;font-weight:700">${m.title} <span class="tag tag-med">${m.level}</span></div>
+        <div style="margin-top:8px;padding:10px;background:#FEF3C7;border-radius:8px;font-size:13px">💡 ${m.tip}</div>
+    `;
+    m.sentences.forEach((s, i) => {
+        html += `
+            <div class="pron-sentence" style="margin-top:10px">
+                <div class="pron-text">${s}</div>
+                <div class="pron-controls">
+                    <button class="pron-btn btn-play" onclick="speakSentenceDirect('${s.replace(/'/g,"\\'")}')">🔊 Listen</button>
+                    <button class="pron-btn btn-record" id="shadow-rec-${id}-${i}" onclick="shadowRecord(${id},${i})">🎤 Repeat</button>
+                    <select onchange="speakRate=this.value" style="width:auto;padding:4px 8px;font-size:12px;min-height:auto">
+                        <option value="0.7">0.7x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="1.3">1.3x</option>
+                    </select>
+                </div>
+                <div class="pron-score" id="shadow-score-${id}-${i}"></div>
+            </div>
+        `;
+    });
+    html += `<button class="btn btn-success btn-sm mt-12" onclick="logStudy('影子跟读:${m.title}',10)">✓ 完成练习</button></div>`;
+    document.getElementById('shadowing-content').innerHTML = html;
+}
+
+let speakRate = 1;
+function speakSentenceDirect(text) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = speakRate;
+    speechSynthesis.speak(u);
+}
+
+function shadowRecord(id, idx) {
+    const text = shadowingData.find(s=>s.id===id).sentences[idx];
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast('Need Chrome'); return; }
+    if (recognition) { try { recognition.stop(); } catch(e){} }
+    const rec = new SR();
+    rec.lang = 'en-US';
+    rec.continuous = false;
+    rec.interimResults = false;
+
+    const btn = document.getElementById('shadow-rec-' + id + '-' + idx);
+    btn.classList.add('recording');
+    btn.textContent = '⏹️ Stop';
+    document.getElementById('shadow-score-' + id + '-' + idx).textContent = 'Listening...';
+
+    rec.onresult = function(e) {
+        const spoken = e.results[0][0].transcript.trim().toLowerCase();
+        const origWords = text.toLowerCase().replace(/[^a-z\s']/g,'').split(/\s+/).filter(w=>w.length>0);
+        const spokenWords = spoken.split(/\s+/).filter(w=>w.length>0);
+        let correct = 0;
+        for (let i=0;i<Math.min(origWords.length,spokenWords.length);i++) {
+            if (origWords[i]===spokenWords[i] || levenshtein(origWords[i],spokenWords[i])<=1) correct++;
+        }
+        const score = Math.round((correct / origWords.length) * 100);
+        const el = document.getElementById('shadow-score-' + id + '-' + idx);
+        el.className = 'pron-score show ' + (score>=80?'good':score>=50?'mid':'bad');
+        el.innerHTML = `<span class="score-big">${score}</span>分 — 你说: "${spoken}"`;
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 Repeat';
+    };
+    rec.onerror = function() {
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 Repeat';
+    };
+    rec.onend = function() {
+        btn.classList.remove('recording');
+        btn.textContent = '🎤 Repeat';
+    };
+    try { rec.start(); } catch(e) { btn.classList.remove('recording'); btn.textContent = '🎤 Repeat'; }
+}
+
 async function initEnglish() {
     await Promise.all([loadDialogues(),loadVocabCards(),loadRetell(),loadRoleplay()]);
     if(dialogues.length) { selectDialogue(dialogues[0].id); initPronunciation(); }
