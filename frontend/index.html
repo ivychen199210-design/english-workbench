@@ -454,6 +454,7 @@
         <div class="dialogue-tab active" onclick="switchKidsSub('alphabet', this)">🔤 Alphabet</div>
         <div class="dialogue-tab" onclick="switchKidsSub('themes', this)">🎨 Themes</div>
         <div class="dialogue-tab" onclick="switchKidsSub('songs', this)">🎵 Songs</div>
+        <div class="dialogue-tab" onclick="switchKidsSub('shows', this)">📺 TV Shows</div>
         <div class="dialogue-tab" onclick="switchKidsSub('games', this)">🎲 Games</div>
     </div>
 
@@ -480,6 +481,14 @@
             <div style="font-size:14px"><strong>👨‍👩‍👧 Parent Tip:</strong> Sing along with your child! Use gestures and actions to make it fun.</div>
         </div>
         <div id="songs-list"></div>
+    </div>
+
+    <!-- TV Shows -->
+    <div id="kids-shows" style="display:none">
+        <div class="card" style="background:#E0E7FF;border-left:4px solid #6366F1">
+            <div style="font-size:14px"><strong>👨‍👩‍👧 Parent Tip:</strong> Watch together! Pause and ask simple questions: "What's that?" "What color?" Keep sessions short (5-10 min).</div>
+        </div>
+        <div id="shows-list"></div>
     </div>
 
     <!-- Games -->
@@ -1165,29 +1174,32 @@ async function logStudy(module,duration){
 }
 
 // ========== 2岁英语启蒙 ==========
-let kidsData = {alphabet:[], themes:[], songs:[], games:[]};
+let kidsData = {alphabet:[], themes:[], songs:[], games:[], shows:[]};
 let kidsLoaded = false;
 let currentTheme = null;
+let currentShow = null;
 
 async function loadKidsData() {
     if (!kidsLoaded) {
-        const [a, t, s, g] = await Promise.all([
+        const [a, t, s, g, sh] = await Promise.all([
             fetch(`${API}/api/kids/alphabet`).then(r=>r.json()),
             fetch(`${API}/api/kids/themes`).then(r=>r.json()),
             fetch(`${API}/api/kids/songs`).then(r=>r.json()),
             fetch(`${API}/api/kids/games`).then(r=>r.json()),
+            fetch(`${API}/api/kids/shows`).then(r=>r.json()),
         ]);
-        kidsData = {alphabet:a, themes:t, songs:s, games:g};
+        kidsData = {alphabet:a, themes:t, songs:s, games:g, shows:sh};
         kidsLoaded = true;
         renderAlphabet();
         renderThemeTabs();
         renderSongs();
+        renderShows();
         renderGames();
     }
 }
 
 function switchKidsSub(sub, el) {
-    ['alphabet','themes','songs','games'].forEach(s => {
+    ['alphabet','themes','songs','shows','games'].forEach(s => {
         document.getElementById('kids-' + s).style.display = 'none';
     });
     document.getElementById('kids-' + sub).style.display = 'block';
@@ -1260,38 +1272,58 @@ function renderSongs() {
         <div class="song-card">
             <div class="song-title">${s.emoji} ${s.title}</div>
             <div class="song-video" id="song-video-${i}" style="margin-top:10px"></div>
-            <button class="btn btn-sm btn-primary mt-8" onclick="toggleSongVideo(${i})" id="song-btn-${i}">▶️ Watch & Sing</button>
+            <button class="btn btn-sm btn-primary mt-8" onclick="toggleBiliVideo('song-video-${i}','song-btn-${i}','${s.bvid}')" id="song-btn-${i}">▶️ Watch & Sing</button>
             <div class="song-lyrics">${s.lyrics.map(l => `<div>${l}</div>`).join('')}</div>
             <div class="song-tip">💡 ${s.tip}</div>
         </div>
     `).join('');
 }
 
-function toggleSongVideo(i) {
-    const container = document.getElementById('song-video-' + i);
-    const btn = document.getElementById('song-btn-' + i);
-    const s = kidsData.songs[i];
+// 通用 B站视频切换
+function toggleBiliVideo(containerId, btnId, bvid) {
+    const container = document.getElementById(containerId);
+    const btn = document.getElementById(btnId);
     if (container.innerHTML) {
-        // 关闭
         container.innerHTML = '';
-        btn.textContent = '▶️ Watch & Sing';
+        btn.textContent = '▶️ Watch';
     } else {
-        // 打开 YouTube 嵌入
         container.innerHTML = `
             <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;">
                 <iframe style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
-                    src="https://www.youtube.com/embed/${s.youtube_id}?autoplay=1&rel=0"
-                    allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                    src="https://player.bilibili.com/player.html?bvid=${bvid}&autoplay=1"
+                    allow="autoplay" allowfullscreen></iframe>
             </div>
         `;
         btn.textContent = '⏹️ Stop';
     }
 }
 
-function speakSong(i) {
-    const s = kidsData.songs[i];
-    const text = s.lyrics.join('. ');
-    speakKids(text);
+// TV Shows
+function renderShows() {
+    document.getElementById('shows-list').innerHTML = kidsData.shows.map((show, si) => `
+        <div class="card" style="border-left:4px solid ${show.color};margin-bottom:12px">
+            <div style="font-size:16px;font-weight:700">${show.emoji} ${show.name}</div>
+            <div class="text-sm text-muted mt-8">${show.desc}</div>
+            <div style="margin-top:12px">
+                ${show.episodes.map((ep, ei) => {
+                    const vid = `show-${si}-${ei}`;
+                    const bid = `show-btn-${si}-${ei}`;
+                    return `
+                        <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+                            <div class="flex flex-between flex-center">
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-weight:600;font-size:14px">📺 ${ep.title}</div>
+                                    <div class="text-sm text-muted mt-4">${ep.desc}</div>
+                                </div>
+                                <button class="btn btn-sm btn-primary" id="${bid}" onclick="toggleBiliVideo('${vid}','${bid}','${ep.bvid}')">▶️</button>
+                            </div>
+                            <div id="${vid}" style="margin-top:8px"></div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `).join('');
 }
 
 // Games

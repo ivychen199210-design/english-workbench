@@ -420,7 +420,7 @@ KIDS_SONGS = [
     {
         "title": "Twinkle Twinkle Little Star",
         "emoji": "Twinkle",
-        "youtube_id": "tV2vU5qCFvg",
+        "bvid": "BV1Yb4y1H7V1",
         "lyrics": [
             "Twinkle, twinkle, little star,",
             "How I wonder what you are!",
@@ -434,7 +434,7 @@ KIDS_SONGS = [
     {
         "title": "Old MacDonald Had a Farm",
         "emoji": "Farm",
-        "youtube_id": "MUjk3kFRZNg",
+        "bvid": "BV1jE411F7Xy",
         "lyrics": [
             "Old MacDonald had a farm, E-I-E-I-O!",
             "And on that farm he had a cow, E-I-E-I-O!",
@@ -447,7 +447,7 @@ KIDS_SONGS = [
     {
         "title": "Head, Shoulders, Knees and Toes",
         "emoji": "Body",
-        "youtube_id": "WX8mwOQ5YJ8",
+        "bvid": "BV1Tk4y1q7SF",
         "lyrics": [
             "Head, shoulders, knees and toes, knees and toes!",
             "Head, shoulders, knees and toes, knees and toes!",
@@ -459,7 +459,7 @@ KIDS_SONGS = [
     {
         "title": "The Wheels on the Bus",
         "emoji": "Bus",
-        "youtube_id": "nvE0Df0Plx4",
+        "bvid": "BV1bK4y1D7CA",
         "lyrics": [
             "The wheels on the bus go round and round,",
             "Round and round, round and round.",
@@ -473,7 +473,7 @@ KIDS_SONGS = [
     {
         "title": "If You're Happy and You Know It",
         "emoji": "Happy",
-        "youtube_id": "71hqRTUI-U0",
+        "bvid": "BV1ZJ411W7ZM",
         "lyrics": [
             "If you're happy and you know it, clap your hands! 👏",
             "If you're happy and you know it, clap your hands! 👏",
@@ -487,7 +487,7 @@ KIDS_SONGS = [
     {
         "title": "Baa Baa Black Sheep",
         "emoji": "Sheep",
-        "youtube_id": "MN_2k5xXGf8",
+        "bvid": "BV1hJ411t7Aj",
         "lyrics": [
             "Baa, baa, black sheep, have you any wool?",
             "Yes sir, yes sir, three bags full.",
@@ -497,6 +497,55 @@ KIDS_SONGS = [
             "Yes sir, yes sir, three bags full."
         ],
         "tip": "Use a soft voice for 'baa baa' and let your child join in."
+    },
+]
+
+# 儿童动画节目
+KIDS_SHOWS = [
+    {
+        "name": "Super Simple Songs",
+        "emoji": "🎶",
+        "desc": "全球最受欢迎的英语启蒙儿歌系列，动画生动，语速慢，适合0-4岁。每首歌都有可爱的卡通角色和简单动作。",
+        "color": "#FEF3C7",
+        "episodes": [
+            {"title": "Super Simple Songs 合集 (60分钟)", "bvid": "BV15a5kzaEKG", "desc": "经典SSS儿歌大合集，包含Baby Shark, Hello Song等热门歌曲"},
+            {"title": "SSS 分级合集 第1级", "bvid": "BV1M1Ka6WEmP", "desc": "从最简单开始，适合刚接触英语的小朋友"},
+            {"title": "One Little Finger", "bvid": "BV1fb421n7BM", "desc": "用手指指身体部位，边唱边学身体词汇"},
+            {"title": "Baby Shark Dance", "bvid": "BV1vt421j7G7", "desc": "小朋友最爱的鲨鱼宝宝舞，全家一起跳"},
+        ]
+    },
+    {
+        "name": "Yakka Dee",
+        "emoji": "🗣️",
+        "desc": "BBC出品，每集5分钟教一个单词，用动画+真人反复重复，鼓励小朋友开口说。适合刚开始学说话的小朋友。",
+        "color": "#DBEAFE",
+        "episodes": [
+            {"title": "Yakka Dee S1合集", "bvid": "BV1WN4y1D7Uq", "desc": "第一季完整合集，每集教一个单词，从Banana到Shoes"},
+            {"title": "Yakka Dee S2合集", "bvid": "BV1Zy4y1L7Xj", "desc": "第二季，更多日常生活单词"},
+            {"title": "Yakka Dee S3合集", "bvid": "BV1iN411H7TQ", "desc": "第三季，进阶词汇和表达"},
+        ]
+    },
+    {
+        "name": "Bluey",
+        "emoji": "🐶",
+        "desc": "澳洲顶级动画片，讲述Bluey一家的温馨故事。语速正常偏快，适合有基础的小朋友，家长一起看也能学到育儿方法。",
+        "color": "#D1FAE5",
+        "episodes": [
+            {"title": "Bluey 英文版 S1合集", "bvid": "BV1uPKp6hEXc", "desc": "第一季英文版，每集6分钟，适合亲子共看"},
+            {"title": "Bluey S1 E01 Magic Xylophone", "bvid": "BV1aG411y7zD", "desc": "第一集：神奇木琴，Bluey和Bingo的想象游戏"},
+            {"title": "Bluey S1 E02 Hospital", "bvid": "BV1kM4y1D7HG", "desc": "第二集：玩医院游戏，学身体和医生词汇"},
+        ]
+    },
+    {
+        "name": "Peppa Pig",
+        "emoji": "🐷",
+        "desc": "英国经典动画，纯正英式发音，语速慢句子简单。每集5分钟讲一个日常生活小故事，非常适合启蒙阶段。",
+        "color": "#FCE7F3",
+        "episodes": [
+            {"title": "Peppa Pig S1 英文版合集", "bvid": "BV13AgS6DEAB", "desc": "第一季52集完整合集，中英字幕"},
+            {"title": "Peppa Pig S1 E01 Muddy Puddles", "bvid": "BV1sW411a7Gx", "desc": "经典第一集：泥坑跳跳，学muddy/clean/boots"},
+            {"title": "Peppa Pig S1 E02 Mr Dinosaur", "bvid": "BV1pW411a7gi", "desc": "乔治的恐龙先生丢了，学toy/lost/find"},
+        ]
     },
 ]
 
@@ -687,6 +736,11 @@ def get_kids_songs():
 def get_kids_games():
     """获取互动游戏数据"""
     return KIDS_GAMES
+
+@app.get("/api/kids/shows")
+def get_kids_shows():
+    """获取儿童动画节目数据"""
+    return KIDS_SHOWS
 
 
 @app.get("/api/word-explain/{word}")
