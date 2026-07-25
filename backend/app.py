@@ -791,6 +791,20 @@ def get_dialogues():
     """获取所有每日对话"""
     return DAILY_DIALOGUES
 
+@app.get("/api/daily-dialogue")
+def get_daily_dialogue():
+    """根据日期返回今日对话（每天轮换）"""
+    today = date.today()
+    idx = today.toordinal() % len(DAILY_DIALOGUES)
+    return DAILY_DIALOGUES[idx]
+
+@app.get("/api/daily-retell")
+def get_daily_retell():
+    """根据日期返回今日复述材料（每天轮换）"""
+    today = date.today()
+    idx = today.toordinal() % len(RETELL_MATERIALS)
+    return RETELL_MATERIALS[idx]
+
 @app.get("/api/dialogues/{dialogue_id}")
 def get_dialogue(dialogue_id: int):
     for d in DAILY_DIALOGUES:

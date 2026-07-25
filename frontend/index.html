@@ -1177,10 +1177,16 @@ async function initEnglish() {
     await Promise.all([loadDialogues(),loadVocabCards(),loadRetell(),loadRoleplay()]);
     if(dialogues.length) { selectDialogue(dialogues[0].id); initPronunciation(); }
 }
-async function loadDialogues(){const r=await fetch(`${API}/api/dialogues`);dialogues=await r.json();renderDialogueTabs();}
+async function loadDialogues(){const r=await fetch(`${API}/api/dialogues`);dialogues=await r.json();renderDialogueTabs();loadTodayDialogue();}
 function renderDialogueTabs(){document.getElementById('dialogue-tabs').innerHTML=dialogues.map(d=>`<div class="dialogue-tab ${currentDialogue?.id===d.id?'active':''}" onclick="selectDialogue(${d.id})">${d.topic}</div>`).join('');}
+async function loadTodayDialogue(){
+    const r=await fetch(`${API}/api/daily-dialogue`);const today=await r.json();
+    currentDialogue=today;renderDialogueTabs();selectDialogueContent();
+}
 function selectDialogue(id){
-    currentDialogue=dialogues.find(d=>d.id===id);renderDialogueTabs();
+    currentDialogue=dialogues.find(d=>d.id===id);renderDialogueTabs();selectDialogueContent();
+}
+function selectDialogueContent(){
     const d=currentDialogue;
     let h=`<div class="card"><strong style="font-size:16px">${d.topic}</strong><div class="text-muted text-sm mt-8">${d.scenario}</div>`;
     h+=d.dialogue.map(l=>`<div class="dialogue-line"><span class="sp ${l.speaker==='You'?'you':''}">${l.speaker}:</span> ${l.text}</div>`).join('');
@@ -1198,7 +1204,11 @@ async function loadVocabCards(){const r=await fetch(`${API}/api/vocab-cards`);vo
             <button class="btn btn-sm btn-primary mt-8" onclick="event.stopPropagation();addToVocab('${c.word}','${c.meaning}','${c.phonetic}','${c.example}','${c.difficulty}')">加入单词本</button></div>
         </div>`).join('');}
 function flipCard(i){document.getElementById('vc-'+i).classList.toggle('flipped');}
-async function loadRetell(){const r=await fetch(`${API}/api/retell`);retellMaterials=await r.json();if(!currentRetell)currentRetell=retellMaterials[0];renderRetellTabs();renderRetellContent();}
+async function loadRetell(){const r=await fetch(`${API}/api/retell`);retellMaterials=await r.json();renderRetellTabs();loadTodayRetell();}
+async function loadTodayRetell(){
+    const r=await fetch(`${API}/api/daily-retell`);const today=await r.json();
+    currentRetell=today;renderRetellTabs();renderRetellContent();
+}
 function renderRetellTabs(){document.getElementById('retell-tabs').innerHTML=retellMaterials.map(r=>`<div class="dialogue-tab ${currentRetell?.id===r.id?'active':''}" onclick="selectRetell(${r.id})">${r.title}</div>`).join('');}
 function selectRetell(id){currentRetell=retellMaterials.find(r=>r.id===id);renderRetellTabs();renderRetellContent();}
 function renderRetellContent(){
@@ -1522,9 +1532,9 @@ function renderGames() {
 document.getElementById('sched-date').value = formatDate(new Date());
 loadDashboard();
 // 预加载英语数据
-fetch(`${API}/api/dialogues`).then(r=>r.json()).then(d=>{dialogues=d;renderDialogueTabs();if(d.length)selectDialogue(d[0].id);initPronunciation();});
+fetch(`${API}/api/dialogues`).then(r=>r.json()).then(d=>{dialogues=d;renderDialogueTabs();loadTodayDialogue();initPronunciation();});
 fetch(`${API}/api/vocab-cards`).then(r=>r.json()).then(d=>{vocabCards=d;document.getElementById('vocab-grid').innerHTML=vocabCards.map((c,i)=>`<div class="vocab-card" id="vc-${i}" onclick="flipCard(${i})"><div class="vc-badge badge-${c.difficulty==='hard'?'hard':c.difficulty==='easy'?'easy':'med'}">${c.difficulty}</div><div class="vc-word">${c.word}</div><div class="vc-phonetic">${c.phonetic||''}</div><div class="vc-back"><div><strong>释义</strong> ${c.meaning}</div><div class="text-muted text-sm mt-4"><strong>例句</strong> ${c.example}</div><button class="btn btn-sm btn-primary mt-8" onclick="event.stopPropagation();addToVocab('${c.word}','${c.meaning}','${c.phonetic}','${c.example}','${c.difficulty}')">加入单词本</button></div></div>`).join('');});
-fetch(`${API}/api/retell`).then(r=>r.json()).then(d=>{retellMaterials=d;if(!currentRetell)currentRetell=d[0];renderRetellTabs();renderRetellContent();});
+fetch(`${API}/api/retell`).then(r=>r.json()).then(d=>{retellMaterials=d;loadTodayRetell();});
 fetch(`${API}/api/roleplay`).then(r=>r.json()).then(d=>{roleplayScenarios=d;document.getElementById('roleplay-list').innerHTML=d.map(s=>`<div class="scenario-card" onclick="openRoleplaySheet(${s.id})"><div class="sc-title">🎭 ${s.title}</div><div class="sc-desc">角色：${s.role} | ${s.setting}</div><div class="sc-tips">💡 ${s.tips}</div></div>`).join('');});
 
 // Service Worker 注册
