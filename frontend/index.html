@@ -1612,19 +1612,25 @@ fetch(`${API}/api/roleplay`).then(r=>r.json()).then(d=>{roleplayScenarios=d;docu
 
 // Service Worker 注册 + 强制更新
 if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').then(reg => {
-        // 检查是否有新版本，有就立即激活
-        if(reg.waiting){ reg.waiting.postMessage('skipWaiting'); }
-        reg.addEventListener('updatefound', () => {
-            const nw = reg.installing;
-            if(nw){ nw.addEventListener('statechange', () => {
-                if(nw.state === 'installed' && navigator.serviceWorker.controller){
-                    // 新版本已下载，强制刷新页面
-                    window.location.reload();
-                }
-            });}
+    // 先注销所有旧的 Service Worker
+    navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(reg => {
+            // 如果 SW 版本不是最新的，先注销再重新注册
+            reg.unregister().then(() => {
+                console.log('Old SW unregistered, re-registering...');
+                return navigator.serviceWorker.register('/sw.js');
+            }).then(newReg => {
+                if(newReg.waiting){ newReg.waiting.postMessage('skipWaiting'); }
+            });
         });
+        // 如果没有旧注册，直接注册
+        if(regs.length === 0){
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                if(reg.waiting){ reg.waiting.postMessage('skipWaiting'); }
+            }).catch(()=>{});
+        }
     }).catch(()=>{});
+    
     // 监听控制器变化，自动刷新
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         window.location.reload();
@@ -1632,13 +1638,22 @@ if('serviceWorker' in navigator){
 }
 
 // 版本检查：如果本地版本号不匹配，清除所有缓存并刷新
-const APP_VERSION = 'v8.1';
+const APP_VERSION = 'v9.0';
 if(localStorage.getItem('app_ver') !== APP_VERSION){
     localStorage.setItem('app_ver', APP_VERSION);
     if('caches' in window){
-        caches.keys().then(keys => keys.forEach(k => caches.delete(k))).then(() => {
-            window.location.reload();
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
+            // 注销所有 service worker 后刷新
+            if('serviceWorker' in navigator){
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    return Promise.all(regs.map(r => r.unregister()));
+                }).then(() => window.location.reload());
+            } else {
+                window.location.reload();
+            }
         });
+    } else {
+        window.location.reload();
     }
 }
 </script>
