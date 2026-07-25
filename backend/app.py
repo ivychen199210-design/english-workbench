@@ -55,9 +55,16 @@ def init_db():
             priority TEXT DEFAULT 'medium',
             done INTEGER DEFAULT 0,
             due_date TEXT,
-            created_at TEXT DEFAULT (datetime('now','localtime'))
+            created_at TEXT DEFAULT (datetime('now','localtime')),
+            reminder_time TEXT,
+            notified INTEGER DEFAULT 0
         )
     """)
+    # 兼容已有数据库：尝试添加新字段（如果不存在）
+    try: c.execute("ALTER TABLE todos ADD COLUMN reminder_time TEXT")
+    except: pass
+    try: c.execute("ALTER TABLE todos ADD COLUMN notified INTEGER DEFAULT 0")
+    except: pass
     # 日程时间块
     c.execute("""
         CREATE TABLE IF NOT EXISTS schedule_blocks (
@@ -1086,6 +1093,7 @@ class TodoCreate(BaseModel):
     category: str = "general"
     priority: str = "medium"
     due_date: Optional[str] = None
+    reminder_time: Optional[str] = None
 
 class TodoUpdate(BaseModel):
     title: Optional[str] = None
@@ -1093,6 +1101,8 @@ class TodoUpdate(BaseModel):
     priority: Optional[str] = None
     done: Optional[int] = None
     due_date: Optional[str] = None
+    reminder_time: Optional[str] = None
+    notified: Optional[int] = None
 
 class ScheduleBlockCreate(BaseModel):
     title: str
@@ -1434,8 +1444,8 @@ def get_todos(category: Optional[str] = None):
 def create_todo(todo: TodoCreate):
     conn = get_db()
     cur = conn.execute(
-        "INSERT INTO todos (title, category, priority, due_date) VALUES (?,?,?,?)",
-        (todo.title, todo.category, todo.priority, todo.due_date)
+        "INSERT INTO todos (title, category, priority, due_date, reminder_time) VALUES (?,?,?,?,?)",
+        (todo.title, todo.category, todo.priority, todo.due_date, todo.reminder_time)
     )
     conn.commit()
     new_id = cur.lastrowid
@@ -1448,7 +1458,7 @@ def update_todo(tid: int, todo: TodoUpdate):
     conn = get_db()
     fields = []
     values = []
-    for f in ["title", "category", "priority", "done", "due_date"]:
+    for f in ["title", "category", "priority", "done", "due_date", "reminder_time", "notified"]:
         val = getattr(todo, f)
         if val is not None:
             fields.append(f"{f}=?")

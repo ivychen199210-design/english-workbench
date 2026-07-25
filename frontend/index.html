@@ -636,7 +636,8 @@ async function loadTodos() {
                 <div class="todo-title">${t.title}</div>
                 <div class="todo-meta">
                     <span class="tag ${priCls[t.priority]}">${priLabels[t.priority]}</span>
-                    ${t.due_date?`<span class="text-muted text-sm">${t.due_date}</span>`:''}
+                    ${t.due_date?`<span class="text-muted text-sm">📅 ${t.due_date}</span>`:''}
+                    ${t.reminder_time?`<span class="text-muted text-sm">🔔 ${t.reminder_time}</span>`:''}
                 </div>
             </div>
             <div class="todo-del" onclick="deleteTodo(${t.id})">×</div>
@@ -649,17 +650,61 @@ function openTodoSheet() {
         <div class="form-row"><label>任务</label><input id="t-title" placeholder="做什么？"></div>
         <div class="form-row"><label>优先级</label><select id="t-pri"><option value="high">高</option><option value="medium" selected>中</option><option value="low">低</option></select></div>
         <div class="form-row"><label>截止日期</label><input type="date" id="t-due"></div>
+        <div class="form-row"><label>提醒时间</label><input type="time" id="t-reminder" value="" style="color:var(--text)"><div class="text-muted text-sm" style="margin-top:4px">设置后到时间会弹出通知提醒</div></div>
         <div class="sheet-actions"><button class="btn btn-outline" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="submitTodo()">添加</button></div>
     `);
 }
 async function submitTodo() {
-    const d = {title:document.getElementById('t-title').value,priority:document.getElementById('t-pri').value,due_date:document.getElementById('t-due').value||null};
+    const d = {title:document.getElementById('t-title').value,priority:document.getElementById('t-pri').value,due_date:document.getElementById('t-due').value||null,reminder_time:document.getElementById('t-reminder').value||null};
     if(!d.title){toast('请输入任务');return;}
     await fetch(`${API}/api/todos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
     closeSheet(); loadTodos(); toast('已添加');
+    if(d.reminder_time) requestNotifPermission();
 }
 async function toggleTodo(id,done){await fetch(`${API}/api/todos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({done})});loadTodos();}
 async function deleteTodo(id){await fetch(`${API}/api/todos/${id}`,{method:'DELETE'});loadTodos();}
+
+// ========== 任务提醒通知 ==========
+function requestNotifPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+async function checkReminders() {
+    try {
+        const res = await fetch(`${API}/api/todos`);
+        const todos = await res.json();
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0,10);
+        const nowTime = now.toTimeString().slice(0,5);
+        todos.forEach(t => {
+            if (t.done || t.notified) return;
+            if (!t.reminder_time) return;
+            const dueDate = t.due_date || todayStr;
+            if (dueDate === todayStr && t.reminder_time <= nowTime) {
+                showTaskNotification(t);
+            }
+        });
+    } catch(e) {}
+}
+
+function showTaskNotification(todo) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('📋 任务提醒', {
+            body: todo.title,
+            tag: 'todo-' + todo.id,
+            icon: '/icon-new-192.png'
+        });
+    } else {
+        toast('🔔 提醒: ' + todo.title);
+    }
+    fetch(`${API}/api/todos/${todo.id}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({notified: 1})
+    });
+}
 
 // ========== 日程 ==========
 async function loadSchedule() {
@@ -1637,6 +1682,11 @@ fetch(`${API}/api/roleplay`).then(r=>r.json()).then(d=>{roleplayScenarios=d;docu
 if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
+
+// 任务提醒：请求通知权限 + 启动定时检查
+requestNotifPermission();
+setInterval(checkReminders, 30000); // 每30秒检查一次
+checkReminders(); // 立即检查一次
 
 // 版本检查（只做一次，不循环）
 const APP_VERSION = 'v10.0';
