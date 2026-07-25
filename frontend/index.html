@@ -1256,9 +1256,27 @@ async function loadVocabCards(){const r=await fetch(`${API}/api/vocab-cards`);vo
             <div class="vc-badge badge-${c.difficulty==='hard'?'hard':c.difficulty==='easy'?'easy':'med'}">${c.difficulty}</div>
             <div class="vc-word">${c.word}</div><div class="vc-phonetic">${c.phonetic||''}</div>
             <div class="vc-back"><div><strong>释义</strong> ${c.meaning}</div><div class="text-muted text-sm mt-4"><strong>例句</strong> ${c.example}</div>
-            <button class="btn btn-sm btn-primary mt-8" onclick="event.stopPropagation();addToVocab('${c.word}','${c.meaning}','${c.phonetic}','${c.example}','${c.difficulty}')">加入单词本</button></div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn btn-sm btn-play" onclick="event.stopPropagation();playVocabWord('${c.word.replace(/'/g,"\\'")}')">🔊 发音</button>
+                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();addToVocab('${c.word}','${c.meaning}','${c.phonetic}','${c.example}','${c.difficulty}')">加入单词本</button>
+            </div></div>
         </div>`).join('');}
 function flipCard(i){document.getElementById('vc-'+i).classList.toggle('flipped');}
+async function playVocabWord(word) {
+    try {
+        const r = await fetch(`${API}/api/word-explain/${encodeURIComponent(word)}`);
+        const d = await r.json();
+        if (d.audio) {
+            const a = new Audio(d.audio);
+            await a.play();
+        } else {
+            // fallback: speech synthesis
+            speakSentenceDirect(word);
+        }
+    } catch(e) {
+        speakSentenceDirect(word);
+    }
+}
 async function loadRetell(){const r=await fetch(`${API}/api/retell`);retellMaterials=await r.json();renderRetellTabs();loadTodayRetell();}
 async function loadTodayRetell(){
     const r=await fetch(`${API}/api/daily-retell`);const today=await r.json();

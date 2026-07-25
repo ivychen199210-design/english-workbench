@@ -1,5 +1,5 @@
-// Ivy's Inspiration Library - Service Worker v7 (live content)
-const CACHE = 'ivy-library-v7';
+// Ivy's Inspiration Library - Service Worker v8 (vocab audio)
+const CACHE = 'ivy-library-v8';
 const URLS = ['/', '/manifest.json', '/icon-new-192.png', '/icon-new-512.png'];
 
 // 安装时立即激活新版本
