@@ -1043,6 +1043,7 @@ function switchEnglishSub(sub, el) {
     if (el) el.classList.add('active');
     if (sub === 'bbc' && !bbcLoaded) loadBBC();
     if (sub === 'shadowing' && !shadowingLoaded) loadShadowing();
+    if (sub === 'vocab') loadVocabCards(); // Always reload to ensure latest render
 }
 
 // BBC News
