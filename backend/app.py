@@ -1142,10 +1142,11 @@ def fetch_free_dictionary(word: str):
         phonetic = ""
         audio = ""
         for p in entry.get("phonetics", []):
-            if p.get("text"):
+            if p.get("text") and not phonetic:
                 phonetic = p.get("text")
-            if p.get("audio"):
+            if p.get("audio") and not audio:
                 audio = p.get("audio")
+            if phonetic and audio:
                 break
         # 释义和例句
         meanings = []
@@ -1310,11 +1311,34 @@ def explain_word(word: str):
     word_lower = word.lower().strip()
 
     # 1. 先查内置词库
+    builtin = None
     if word_lower in WORD_EXPLANATIONS:
-        return WORD_EXPLANATIONS[word_lower]
-    for key, val in WORD_EXPLANATIONS.items():
-        if word_lower in key or key in word_lower:
-            return val
+        builtin = WORD_EXPLANATIONS[word_lower]
+    else:
+        for key, val in WORD_EXPLANATIONS.items():
+            if word_lower in key or key in word_lower:
+                builtin = val
+                break
+
+    # 尝试从 Free Dictionary API 获取音频和音标（内置词库没有音频）
+    audio_url = ""
+    api_phonetic = ""
+    try:
+        dict_data = fetch_free_dictionary(word)
+        if dict_data:
+            audio_url = dict_data.get("audio", "")
+            api_phonetic = dict_data.get("phonetic", "")
+    except Exception:
+        pass
+
+    if builtin:
+        result = dict(builtin)
+        result["audio"] = audio_url
+        # 如果内置没有音标，用API的
+        if not result.get("phonetic") and api_phonetic:
+            result["phonetic"] = api_phonetic
+        result["source"] = "Ivy 词库"
+        return result
 
     # 2. 内置没有，调 Free Dictionary API
     dict_data = fetch_free_dictionary(word)
