@@ -1,12 +1,12 @@
 {
-    "name": "English Workbench",
-    "short_name": "Workbench",
-    "description": "英语口语学习 + 个人工作台",
+    "name": "Ivy's Inspiration Library",
+    "short_name": "Ivy Library",
+    "description": "Ivy的灵感库 - 英语学习 + 个人工作台 + 儿童启蒙",
     "start_url": "/",
     "display": "standalone",
     "orientation": "portrait",
-    "background_color": "#3730A3",
-    "theme_color": "#3730A3",
+    "background_color": "#4F46E5",
+    "theme_color": "#4F46E5",
     "icons": [
         {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
         {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"}
