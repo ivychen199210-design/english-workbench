@@ -756,7 +756,7 @@ function selectPronDialogue(id) {
 function renderPronSentences() {
     const d = dialogues.find(x => x.id === pronDialogueId);
     if (!d) return;
-    document.getElementById('pron-sentences').innerHTML = d.dialogue.map((line, i) => `
+    let html = d.dialogue.map((line, i) => `
         <div class="pron-sentence">
             <div class="pron-text" id="pron-text-${i}">${line.text}</div>
             <div class="pron-controls">
@@ -768,6 +768,22 @@ function renderPronSentences() {
             <div style="display:none" id="pron-original-${i}">${line.text}</div>
         </div>
     `).join('');
+    // Add complete button at the bottom
+    html += `<button class="btn btn-success btn-sm mt-12" onclick="completePronunciation('${d.topic.replace(/'/g,"\\'")}')">✓ 完成练习</button>`;
+    document.getElementById('pron-sentences').innerHTML = html;
+}
+
+function completePronunciation(topic) {
+    // Calculate average score from displayed scores
+    const scores = [];
+    const scoreEls = document.querySelectorAll('.pron-score');
+    scoreEls.forEach(el => {
+        const text = el.textContent;
+        const match = text.match(/(\d+)/);
+        if (match) scores.push(parseInt(match[1]));
+    });
+    const avgScore = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+    logStudy(`发音练习:${topic}`, avgScore || 10);
 }
 
 // 语音合成 - 朗读句子
