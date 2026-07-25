@@ -5,6 +5,8 @@ English Workbench 后端服务
 import sqlite3
 import json
 import os
+import re
+import requests
 from datetime import datetime, date
 from pathlib import Path
 from typing import Optional, List
@@ -339,6 +341,50 @@ class StudyLogCreate(BaseModel):
 
 # ==================== 英语学习 API ====================
 
+def fetch_free_dictionary(word: str):
+    """调用 Free Dictionary API 获取单词释义"""
+    try:
+        url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word.lower().strip()}"
+        r = requests.get(url, timeout=8)
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        if not data or not isinstance(data, list):
+            return None
+        entry = data[0]
+        word_text = entry.get("word", word)
+        phonetic = ""
+        audio = ""
+        for p in entry.get("phonetics", []):
+            if p.get("text"):
+                phonetic = p.get("text")
+            if p.get("audio"):
+                audio = p.get("audio")
+                break
+        # 释义和例句
+        meanings = []
+        for m in entry.get("meanings", []):
+            part = m.get("partOfSpeech", "")
+            defs = []
+            for d in m.get("definitions", [])[:3]:  # 每种词性最多3条释义
+                defs.append({
+                    "definition": d.get("definition", ""),
+                    "example": d.get("example", ""),
+                    "synonyms": d.get("synonyms", [])[:3]
+                })
+            if defs:
+                meanings.append({"partOfSpeech": part, "definitions": defs})
+        return {
+            "word": word_text,
+            "phonetic": phonetic,
+            "audio": audio,
+            "meanings": meanings,
+            "source": "Free Dictionary API"
+        }
+    except Exception as e:
+        print("dictionary api error:", e)
+        return None
+
 @app.get("/api/dialogues")
 def get_dialogues():
     """获取所有每日对话"""
@@ -368,20 +414,50 @@ def get_retell_materials():
 
 @app.get("/api/word-explain/{word}")
 def explain_word(word: str):
-    """疑难单词讲解"""
+    """疑难单词讲解 - 先查内置词库，没有再调 Free Dictionary API"""
     word_lower = word.lower().strip()
+
+    # 1. 先查内置词库
     if word_lower in WORD_EXPLANATIONS:
         return WORD_EXPLANATIONS[word_lower]
-    # 模糊匹配
     for key, val in WORD_EXPLANATIONS.items():
         if word_lower in key or key in word_lower:
             return val
+
+    # 2. 内置没有，调 Free Dictionary API
+    dict_data = fetch_free_dictionary(word)
+    if dict_data:
+        # 组装中文释义（取第一条释义）
+        first_meaning = ""
+        example = ""
+        if dict_data["meanings"] and dict_data["meanings"][0]["definitions"]:
+            first = dict_data["meanings"][0]["definitions"][0]
+            first_meaning = first.get("definition", "")
+            example = first.get("example", "")
+        explanation = f"'{dict_data['word']}' 来自 Free Dictionary API。"
+        if dict_data["phonetic"]:
+            explanation += f"音标：{dict_data['phonetic']}。"
+        if first_meaning:
+            explanation += f"释义：{first_meaning}"
+        return {
+            "word": dict_data["word"],
+            "phonetic": dict_data["phonetic"],
+            "meaning": first_meaning,
+            "example": example,
+            "audio": dict_data.get("audio", ""),
+            "meanings": dict_data["meanings"],
+            "explanation": explanation,
+            "source": "Free Dictionary API"
+        }
+
+    # 3. 都没有
     return {
         "word": word,
         "phonetic": "",
-        "meaning": "暂未收录此单词，建议查阅词典后手动添加到单词本",
+        "meaning": "未找到该单词的释义",
         "example": "",
-        "explanation": f"'{word}' 暂未在素材库中。你可以将它添加到单词本，稍后补充释义。建议使用英英词典（如 Cambridge Dictionary）查看完整释义。",
+        "audio": "",
+        "explanation": f"'{word}' 暂未在素材库和在线词典中找到。建议：\n1. 检查拼写是否正确\n2. 目前支持英文单词查询\n3. 也可以手动添加到单词本",
     }
 
 

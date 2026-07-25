@@ -962,15 +962,69 @@ function submitRoleplay(id){
 async function lookupWord(w){
     const word=w||document.getElementById('word-input').value.trim();if(!word)return;
     const r=await fetch(`${API}/api/word-explain/${encodeURIComponent(word)}`);const d=await r.json();
-    document.getElementById('word-result').innerHTML=`
-        <div style="background:#EFF6FF;border-radius:10px;padding:14px;margin-top:12px;border-left:4px solid var(--primary)">
-            <div style="font-size:18px;font-weight:700;color:var(--primary-dark)">${d.word} ${d.phonetic?`<span style="color:var(--text-muted);font-size:14px">${d.phonetic}</span>`:''}</div>
-            ${d.meaning?`<div class="mt-8"><strong>释义：</strong>${d.meaning}</div>`:''}
-            ${d.example?`<div class="mt-8 text-muted text-sm">📝 ${d.example}</div>`:''}
-            <div class="mt-12" style="padding-top:10px;border-top:1px solid var(--border);font-size:14px">${d.explanation}</div>
-            <button class="btn btn-sm btn-primary mt-8" onclick="addToVocab('${d.word}','${(d.meaning||'').replace(/'/g,"\\'")}','${(d.phonetic||'').replace(/'/g,"\\'")}','${(d.example||'').replace(/'/g,"\\'")}','medium')">加入单词本</button>
-        </div>`;
     if(!w)document.getElementById('word-input').value='';
+
+    // 判断输入是否主要是中文
+    const isChinese = /[\u4e00-\u9fa5]/.test(word);
+    if (isChinese) {
+        document.getElementById('word-result').innerHTML=`
+            <div style="background:#FEF3C7;border-radius:10px;padding:14px;margin-top:12px;border-left:4px solid var(--accent)">
+                <div style="font-size:16px;font-weight:700">💡 提示</div>
+                <div class="mt-8">目前词典查询支持 <strong>英文单词</strong>，例如：<span style="color:var(--primary);cursor:pointer" onclick="document.getElementById('word-input').value='buttocks';lookupWord('buttocks')">buttocks</span></div>
+                <div class="text-muted text-sm mt-8">如果你想查"${word}"的英文说法，可以用翻译软件先找到对应英文，再在这里查发音和用法。</div>
+            </div>`;
+        return;
+    }
+
+    // 构建词典结果
+    let html = `<div style="background:#EFF6FF;border-radius:10px;padding:14px;margin-top:12px;border-left:4px solid var(--primary)">`;
+    html += `<div style="font-size:20px;font-weight:700;color:var(--primary-dark)">${d.word}`;
+    if (d.phonetic) html += ` <span style="color:var(--text-muted);font-size:14px;font-weight:400">${d.phonetic}</span>`;
+    if (d.audio) html += ` <button class="btn btn-sm btn-play" onclick="playWordAudio('${d.audio}')">🔊</button>`;
+    html += `</div>`;
+
+    // 释义来源
+    if (d.source) {
+        html += `<div class="text-muted text-sm mt-4">来源：${d.source}</div>`;
+    }
+
+    // 详细释义
+    if (d.meanings && d.meanings.length) {
+        html += `<div style="margin-top:14px">`;
+        d.meanings.forEach(m => {
+            html += `<div style="margin-bottom:10px"><span class="tag tag-low">${m.partOfSpeech || 'other'}</span>`;
+            m.definitions.forEach((def, i) => {
+                html += `<div style="margin-top:6px;padding-left:8px;border-left:2px solid var(--border)">
+                    <div>${i+1}. ${def.definition}</div>
+                    ${def.example ? `<div class="text-muted text-sm mt-4">📝 ${def.example}</div>` : ''}
+                </div>`;
+            });
+            html += `</div>`;
+        });
+        html += `</div>`;
+    } else if (d.meaning) {
+        html += `<div class="mt-8"><strong>释义：</strong>${d.meaning}</div>`;
+        if (d.example) html += `<div class="mt-8 text-muted text-sm">📝 ${d.example}</div>`;
+    }
+
+    // 讲解
+    if (d.explanation) {
+        html += `<div class="mt-12" style="padding-top:10px;border-top:1px solid var(--border);font-size:14px">${d.explanation}</div>`;
+    }
+
+    // 加入单词本按钮
+    const safeMeaning = (d.meaning || (d.meanings && d.meanings[0] && d.meanings[0].definitions[0] && d.meanings[0].definitions[0].definition) || '').replace(/'/g,"\\'");
+    const safePhonetic = (d.phonetic || '').replace(/'/g,"\\'");
+    const safeExample = (d.example || '').replace(/'/g,"\\'");
+    html += `<button class="btn btn-sm btn-primary mt-12" onclick="addToVocab('${d.word}','${safeMeaning}','${safePhonetic}','${safeExample}','medium')">加入单词本</button>`;
+    html += `</div>`;
+
+    document.getElementById('word-result').innerHTML = html;
+}
+
+function playWordAudio(url) {
+    const a = new Audio(url);
+    a.play().catch(() => toast('播放失败'));
 }
 
 // ========== 单词本 ==========
