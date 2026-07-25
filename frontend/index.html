@@ -1081,14 +1081,22 @@ function renderBBC() {
 let shadowingLoaded = false, shadowingData = [];
 async function loadShadowing() {
     if (shadowingLoaded) return;
-    shadowingData = await fetch(`${API}/api/shadowing`).then(r=>r.json());
+    try {
+        // 优先加载实时网络影子跟读素材
+        const r = await fetch(`${API}/api/live-shadowing`);
+        shadowingData = await r.json();
+    } catch(e) {
+        // 回退到内置素材
+        const r = await fetch(`${API}/api/shadowing`);
+        shadowingData = await r.json();
+    }
     shadowingLoaded = true;
     renderShadowingTabs();
-    selectShadowing(1);
+    if (shadowingData.length > 0) selectShadowing(shadowingData[0].id);
 }
 function renderShadowingTabs() {
     document.getElementById('shadowing-tabs').innerHTML = shadowingData.map(s =>
-        `<div class="dialogue-tab" onclick="selectShadowing(${s.id})">${s.title} <span class="text-muted" style="font-size:10px">${s.level}</span></div>`
+        `<div class="dialogue-tab" onclick="selectShadowing(${s.id})">${s.title} <span class="text-muted" style="font-size:10px">${s.level}</span>${s.is_live?' <span style="background:#10B981;color:#fff;padding:1px 5px;border-radius:6px;font-size:9px;animation:pulse 2s infinite">LIVE</span>':''}</div>`
     ).join('');
 }
 function selectShadowing(id) {
@@ -1098,7 +1106,7 @@ function selectShadowing(id) {
         t.classList.toggle('active', shadowingData[i].id === id);
     });
     let html = `<div class="card">
-        <div style="font-size:16px;font-weight:700">${m.title} <span class="tag tag-med">${m.level}</span></div>
+        <div style="font-size:16px;font-weight:700">${m.title} <span class="tag tag-med">${m.level}</span>${m.is_live?' <span style="background:#10B981;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;animation:pulse 2s infinite">🔴 LIVE</span>':''}</div>
         <div style="margin-top:8px;padding:10px;background:#FEF3C7;border-radius:8px;font-size:13px">💡 ${m.tip}</div>
     `;
     m.sentences.forEach((s, i) => {
@@ -1118,6 +1126,9 @@ function selectShadowing(id) {
             </div>
         `;
     });
+    if (m.source_url) {
+        html += `<div class="mt-8"><a href="${m.source_url}" target="_blank" rel="noopener" style="color:var(--primary);font-size:13px;text-decoration:underline">🔗 查看原文来源</a></div>`;
+    }
     html += `<button class="btn btn-success btn-sm mt-12" onclick="logStudy('影子跟读:${m.title}',10)">✓ 完成练习</button></div>`;
     document.getElementById('shadowing-content').innerHTML = html;
 }
@@ -1176,6 +1187,8 @@ function shadowRecord(id, idx) {
 async function initEnglish() {
     await Promise.all([loadDialogues(),loadVocabCards(),loadRetell(),loadRoleplay()]);
     if(dialogues.length) { selectDialogue(dialogues[0].id); initPronunciation(); }
+    // 后台加载网络实时内容
+    loadLiveContent();
 }
 async function loadDialogues(){const r=await fetch(`${API}/api/dialogues`);dialogues=await r.json();renderDialogueTabs();loadTodayDialogue();}
 function renderDialogueTabs(){document.getElementById('dialogue-tabs').innerHTML=dialogues.map(d=>`<div class="dialogue-tab ${currentDialogue?.id===d.id?'active':''}" onclick="selectDialogue(${d.id})">${d.topic}</div>`).join('');}
@@ -1183,15 +1196,57 @@ async function loadTodayDialogue(){
     const r=await fetch(`${API}/api/daily-dialogue`);const today=await r.json();
     currentDialogue=today;renderDialogueTabs();selectDialogueContent();
 }
+
+// ===== 网络实时内容 =====
+let liveContentData = null;
+let liveContentLoaded = false;
+
+async function loadLiveContent() {
+    if (liveContentLoaded) return;
+    try {
+        const r = await fetch(`${API}/api/live-content`);
+        liveContentData = await r.json();
+        liveContentLoaded = true;
+
+        // 如果有实时每日对话，替换当前对话
+        if (liveContentData.daily_dialogue) {
+            // 插入到对话标签最前面
+            const liveDlg = liveContentData.daily_dialogue;
+            const existingLive = dialogues.find(d => d.id === 999);
+            if (!existingLive) {
+                dialogues.unshift(liveDlg);
+            } else {
+                // 更新已有
+                const idx = dialogues.findIndex(d => d.id === 999);
+                if (idx >= 0) dialogues[idx] = liveDlg;
+            }
+            currentDialogue = liveDlg;
+            renderDialogueTabs();
+            selectDialogueContent();
+            // 通知用户
+            toast('📰 今日实时新闻已更新');
+        }
+    } catch(e) {
+        console.log('Live content not available:', e);
+    }
+}
+
 function selectDialogue(id){
     currentDialogue=dialogues.find(d=>d.id===id);renderDialogueTabs();selectDialogueContent();
 }
 function selectDialogueContent(){
     const d=currentDialogue;
     let h=`<div class="card"><strong style="font-size:16px">${d.topic}</strong><div class="text-muted text-sm mt-8">${d.scenario}</div>`;
+    // 如果是实时内容，显示特殊标记
+    if (d.is_live) {
+        h += `<div style="margin-top:8px;display:flex;align-items:center;gap:6px"><span style="background:#10B981;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;animation:pulse 2s infinite">🔴 LIVE</span><span class="text-muted text-sm">来自网络实时内容</span></div>`;
+    }
     h+=d.dialogue.map(l=>`<div class="dialogue-line"><span class="sp ${l.speaker==='You'?'you':''}">${l.speaker}:</span> ${l.text}</div>`).join('');
     h+=`<div class="mt-12"><strong>关键短语</strong></div>`;
     h+=d.key_phrases.map(p=>`<div style="padding:10px;background:#F9FAFB;border-radius:8px;margin-top:6px"><div class="flex flex-between"><strong>${p.phrase}</strong><span class="text-muted text-sm">${p.meaning}</span></div><div class="text-sm text-muted mt-4">${p.usage}</div></div>`).join('');
+    if (d.source_url) {
+        h += `<div class="mt-8"><a href="${d.source_url}" target="_blank" rel="noopener" style="color:var(--primary);font-size:13px;text-decoration:underline">🔗 查看原文来源</a></div>`;
+    }
     h+=`<button class="btn btn-success btn-sm mt-12" onclick="logStudy('每日对话:${d.topic}',10)">✓ 完成学习</button></div>`;
     document.getElementById('dialogue-content').innerHTML=h;
 }

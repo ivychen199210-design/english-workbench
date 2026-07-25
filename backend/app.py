@@ -6,10 +6,14 @@ import sqlite3
 import json
 import os
 import re
+import time
+import hashlib
+import threading
 import requests
 from datetime import datetime, date
 from pathlib import Path
 from typing import Optional, List
+from html.parser import HTMLParser
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -695,6 +699,387 @@ SHADOWING_MATERIALS = [
 ]
 
 
+# ==================== 网络实时内容爬取 ====================
+
+# 缓存存储（内存缓存，30分钟过期）
+_live_content_cache = {"data": None, "fetched_at": 0}
+_live_shadowing_cache = {"data": None, "fetched_at": 0}
+CACHE_TTL = 30 * 60  # 30分钟
+
+
+class BNEHTMLParser(HTMLParser):
+    """Breaking News English 首页解析器"""
+    def __init__(self):
+        super().__init__()
+        self.articles = []
+        self._in_article = False
+        self._current = {}
+        self._link_base = "https://breakingnewsenglish.com"
+        self._text_buffer = ""
+
+    def handle_starttag(self, tag, attrs):
+        attrs_dict = dict(attrs)
+        href = attrs_dict.get("href", "")
+
+        # 检测文章链接：形如 2607/260723-the-odyssey.html（排除 level 链接如 -0.html, -1.html）
+        if tag == "a" and re.search(r"\d{4}/\d{6}-[\w-]+\.html", href):
+            # 排除 Level 0/1/2/4/5 的链接（这些是分级版本）
+            if re.search(r"-[\d]\.html$", href):
+                return
+            full_url = href if href.startswith("http") else self._link_base + "/" + href.lstrip("/")
+            self._current = {"url": full_url, "title": "", "raw_title": ""}
+            self._in_article = True
+            self._text_buffer = ""
+
+    def handle_data(self, data):
+        if self._in_article:
+            self._text_buffer += data
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self._in_article:
+            text = self._text_buffer.strip()
+            if text and len(text) > 5:
+                # 清理 HTML 实体和多余空白
+                clean = re.sub(r"\s+", " ", text).strip()
+                # 排除纯 level 标签、纯数字等
+                if re.match(r"^Level\s+\d+$", clean) or re.match(r"^\d+$", clean):
+                    self._current = {}
+                    self._in_article = False
+                    self._text_buffer = ""
+                    return
+                self._current["title"] = clean
+                self.articles.append(dict(self._current))
+            self._current = {}
+            self._in_article = False
+            self._text_buffer = ""
+
+
+def fetch_breaking_news_english():
+    """从 Breaking News English 抓取最新文章列表"""
+    try:
+        resp = requests.get(
+            "https://breakingnewsenglish.com/index.html",
+            timeout=15,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; EnglishWorkbench/1.0)",
+                "Accept": "text/html,application/xhtml+xml",
+            }
+        )
+        if resp.status_code != 200:
+            return None
+
+        parser = BNEHTMLParser()
+        parser.feed(resp.text)
+        articles = parser.articles
+
+        # 去重并整理，过滤掉太长的标题（可能是描述文本而非标题）
+        seen = set()
+        result = []
+        for a in articles:
+            key = a["url"]
+            title = a.get("title", "").strip().strip("'").strip('"')
+            # 跳过过长的标题（通常是描述文本）和明显非文章标题的
+            if key not in seen and title and len(title) > 5 and len(title) < 100:
+                seen.add(key)
+                result.append({
+                    "title": title,
+                    "url": a["url"],
+                    "date": a.get("date", ""),
+                    "source": "Breaking News English"
+                })
+        return result[:8]  # 最多取8篇
+    except Exception as e:
+        print(f"[BNE fetch error] {e}")
+        return None
+
+
+def fetch_bne_article_content(url):
+    """抓取 Breaking News English 单篇文章内容（Level 3）"""
+    try:
+        resp = requests.get(
+            url,
+            timeout=15,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; EnglishWorkbench/1.0)",
+                "Accept": "text/html,application/xhtml+xml",
+            }
+        )
+        if resp.status_code != 200:
+            return None
+
+        text = resp.text
+
+        # 提取文章标题
+        title_match = re.search(r"<h1[^>]*>(.*?)</h1>", text, re.DOTALL)
+        title = title_match.group(1).strip() if title_match else ""
+        title = re.sub(r"<[^>]+>", "", title)  # 去除HTML标签
+        # 清理 "Breaking News English Lesson: " 前缀
+        title = re.sub(r"^Breaking News English Lesson:\s*", "", title).strip()
+        title = title.strip("'").strip('"').strip()
+
+        # BNE article body: the first long paragraph is the actual news text
+        paragraphs_raw = re.findall(r"<p[^>]*>(.*?)</p>", text, re.DOTALL)
+        clean_paragraphs = []
+
+        for p in paragraphs_raw:
+            clean = re.sub(r"<[^>]+>", "", p).strip()
+            clean = clean.replace("&nbsp;", " ").replace("&quot;", '"').strip()
+            # The first paragraph with >200 chars is the actual news article
+            if len(clean) > 200 and not clean.startswith("Try the") and not clean.startswith("Make sure"):
+                # Verify it's not a gap-fill (shouldn't have long underscores)
+                if "____" not in clean and not re.match(r"^\d+[.)]\s", clean):
+                    clean_paragraphs.append(clean)
+                    break  # Only need the first real paragraph
+
+        sentences = []
+        for para in clean_paragraphs:
+            para_sentences = re.split(r"(?<=[.!?])\s+", para)
+            for s in para_sentences:
+                s = s.strip()
+                if s and len(s) > 15 and len(s) < 200:
+                    sentences.append(s)
+
+        return {
+            "title": title,
+            "paragraphs": clean_paragraphs,
+            "sentences": sentences[:10],  # 最多10句
+            "url": url,
+            "source": "Breaking News English"
+        }
+    except Exception as e:
+        print(f"[BNE article fetch error] {e}")
+        return None
+
+
+def fetch_news_in_levels():
+    """从 News in Levels 抓取最新文章"""
+    try:
+        resp = requests.get(
+            "https://www.newsinlevels.com/",
+            timeout=15,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; EnglishWorkbench/1.0)",
+                "Accept": "text/html,application/xhtml+xml",
+            }
+        )
+        if resp.status_code != 200:
+            return None
+
+        text = resp.text
+
+        # 提取文章标题和链接
+        # News in Levels 链接格式：h3 > a 包含完整 URL
+        articles = []
+        pattern = r'<h3>\s*<a\s+href="(https://www\.newsinlevels\.com/products/[\w-]+/)"[^>]*>(.*?)</a>'
+        matches = re.findall(pattern, text, re.DOTALL)
+
+        seen_urls = set()
+        for url, raw_title in matches:
+            clean_title = re.sub(r"\s+", " ", raw_title).strip()
+            if clean_title and url not in seen_urls:
+                seen_urls.add(url)
+                # 转换为 level-2 链接（适中难度）
+                level2_url = re.sub(r"level-\d", "level-2", url)
+                articles.append({
+                    "title": clean_title,
+                    "url": level2_url,
+                    "source": "News in Levels"
+                })
+                if len(articles) >= 5:
+                    break
+        return articles
+    except Exception as e:
+        print(f"[NIL fetch error] {e}")
+        return None
+
+
+def fetch_nil_article_content(url):
+    """抓取 News in Levels 单篇文章内容"""
+    try:
+        resp = requests.get(
+            url,
+            timeout=15,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; EnglishWorkbench/1.0)",
+                "Accept": "text/html,application/xhtml+xml",
+            }
+        )
+        if resp.status_code != 200:
+            return None
+
+        text = resp.text
+
+        # 提取标题
+        title_match = re.search(r"<h1[^>]*>(.*?)</h1>", text, re.DOTALL)
+        title = title_match.group(1).strip() if title_match else ""
+        title = re.sub(r"<[^>]+>", "", title)
+        # 去掉 " – level 2" 后缀
+        title = re.sub(r"\s*[-–]\s*level\s*\d+\s*$", "", title, flags=re.IGNORECASE)
+
+        # 提取正文：在 <h1> 之后、Difficult words 之前的 <p> 标签内容
+        body_match = re.search(r"</h1>(.*?)(?:Difficult words|You can watch)", text, re.DOTALL)
+        if body_match:
+            body = body_match.group(1)
+            paragraphs = re.findall(r"<p[^>]*>(.*?)</p>", body, re.DOTALL)
+        else:
+            paragraphs = []
+
+        clean_paragraphs = []
+        sentences = []
+        for p in paragraphs:
+            clean = re.sub(r"<[^>]+>", "", p).strip()
+            if clean and len(clean) > 20 and "level" not in clean.lower()[:20]:
+                clean_paragraphs.append(clean)
+                # 分句
+                para_sentences = re.split(r"(?<=[.!?])\s+", clean)
+                for s in para_sentences:
+                    s = s.strip()
+                    if s and len(s) > 12 and len(s) < 200:
+                        sentences.append(s)
+
+        return {
+            "title": title,
+            "paragraphs": clean_paragraphs,
+            "sentences": sentences[:10],
+            "url": url,
+            "source": "News in Levels"
+        }
+    except Exception as e:
+        print(f"[NIL article fetch error] {e}")
+        return None
+
+
+def get_live_daily_content():
+    """获取每日实时内容（带缓存）"""
+    global _live_content_cache
+    now = time.time()
+    if _live_content_cache["data"] and (now - _live_content_cache["fetched_at"]) < CACHE_TTL:
+        return _live_content_cache["data"]
+
+    result = {
+        "articles": [],
+        "daily_dialogue": None,
+        "daily_shadowing": None,
+        "fetched_at": datetime.now().isoformat(),
+        "from_cache": False,
+    }
+
+    # 1. 抓取 Breaking News English 文章列表
+    bne_articles = fetch_breaking_news_english()
+    if bne_articles:
+        result["articles"].extend(bne_articles)
+
+    # 2. 抓取 News in Levels 文章列表
+    nil_articles = fetch_news_in_levels()
+    if nil_articles:
+        result["articles"].extend(nil_articles)
+
+    # 3. 根据日期选择今天的主推文章（用于每日对话）
+    if result["articles"]:
+        today = date.today()
+        idx = today.toordinal() % len(result["articles"])
+        featured = result["articles"][idx]
+
+        # 抓取文章详细内容
+        content = fetch_bne_article_content(featured["url"])
+        if not content and "newsinlevels" in featured.get("url", ""):
+            content = fetch_nil_article_content(featured["url"])
+
+        if content and content.get("paragraphs") and content.get("sentences"):
+            # Build daily dialogue from news sentences
+            dialogue_lines = []
+            sents = content["sentences"]
+
+            # Intro sentence
+            if sents:
+                dialogue_lines.append({"speaker": "Teacher", "text": f"Today's news: {sents[0]}"})
+
+            # Add Q&A for remaining sentences
+            questions = [
+                "What happened next?",
+                "Can you tell me more?",
+                "What are the details?",
+                "Why is this significant?",
+                "What else should I know?",
+            ]
+            for i, sent in enumerate(sents[1:6], 1):
+                dialogue_lines.append({"speaker": "You", "text": questions[(i-1) % len(questions)]})
+                dialogue_lines.append({"speaker": "Teacher", "text": sent})
+
+            # Extract key vocabulary from news text
+            all_text = " ".join(content["paragraphs"])
+            # Extract capitalized words (proper nouns and key terms)
+            words = re.findall(r"\b[A-Z][a-z]{4,}(?:\s+[A-Z][a-z]{3,})?\b", all_text)
+            # Also extract longer English words
+            long_words = re.findall(r"\b[a-z]{6,}\b", all_text)
+            all_keywords = list(dict.fromkeys(words[:4] + long_words[:3]))
+
+            key_phrases = []
+            for w in all_keywords[:5]:
+                if len(w) > 3:
+                    key_phrases.append({
+                        "phrase": w.strip(),
+                        "meaning": "点击单词查询词典了解详细释义",
+                        "usage": f"出自今日新闻：{content['title'][:40]}"
+                    })
+
+            result["daily_dialogue"] = {
+                "id": 999,
+                "topic": f"📰 {content['title'][:50]}",
+                "scenario": f"今日实时新闻 · {featured.get('source', '网络来源')} · {featured.get('date', datetime.now().strftime('%Y-%m-%d'))}",
+                "dialogue": dialogue_lines[:6],
+                "key_phrases": key_phrases[:4],
+                "source_url": featured["url"],
+                "is_live": True,
+            }
+
+        # 4. 构建影子跟读素材（从今天文章提取句子）
+        if content and content.get("sentences") and len(content["sentences"]) >= 3:
+            result["daily_shadowing"] = {
+                "id": 999,
+                "title": f"📰 {content['title'][:40]}",
+                "level": "Live News",
+                "sentences": content["sentences"][:8],
+                "tip": f"今日实时新闻跟读。来自 {featured.get('source', '网络')}。注意新闻语调——清晰、平稳、有节奏感。",
+                "source_url": featured["url"],
+                "is_live": True,
+            }
+
+    _live_content_cache["data"] = result
+    _live_content_cache["fetched_at"] = now
+    return result
+
+
+def get_live_shadowing_content():
+    """获取实时影子跟读素材（带缓存）"""
+    global _live_shadowing_cache
+    now = time.time()
+    if _live_shadowing_cache["data"] and (now - _live_shadowing_cache["fetched_at"]) < CACHE_TTL:
+        return _live_shadowing_cache["data"]
+
+    result = []
+
+    # 从 Breaking News English 抓取文章并提取句子
+    bne_articles = fetch_breaking_news_english()
+    if bne_articles:
+        for article in bne_articles[:3]:  # 最多处理3篇
+            content = fetch_bne_article_content(article["url"])
+            if content and content.get("sentences") and len(content["sentences"]) >= 4:
+                result.append({
+                    "id": 900 + len(result),
+                    "title": f"📰 {content['title'][:40]}",
+                    "level": "Live News",
+                    "sentences": content["sentences"][:8],
+                    "tip": f"实时新闻跟读。来源：Breaking News English。注意保持清晰发音和自然语速。",
+                    "source_url": article["url"],
+                    "is_live": True,
+                })
+
+    _live_shadowing_cache["data"] = result
+    _live_shadowing_cache["fetched_at"] = now
+    return result
+
+
 # ==================== 数据模型 ====================
 class TodoCreate(BaseModel):
     title: str
@@ -871,6 +1256,53 @@ def get_shadowing_material(sid: int):
         if m["id"] == sid:
             return m
     raise HTTPException(404, "Material not found")
+
+
+# ==================== 网络实时内容 API ====================
+
+@app.get("/api/live-content")
+def get_live_content():
+    """获取网络实时英语学习内容（每日对话 + 影子跟读）"""
+    try:
+        data = get_live_daily_content()
+        return data
+    except Exception as e:
+        print(f"[live-content error] {e}")
+        return {"articles": [], "daily_dialogue": None, "daily_shadowing": None, "error": str(e)}
+
+
+@app.get("/api/live-shadowing")
+def get_live_shadowing():
+    """获取网络实时影子跟读素材"""
+    try:
+        live_data = get_live_shadowing_content()
+        # 合并内置素材和网络素材
+        all_materials = list(live_data) + list(SHADOWING_MATERIALS)
+        return all_materials
+    except Exception as e:
+        print(f"[live-shadowing error] {e}")
+        return list(SHADOWING_MATERIALS)
+
+
+@app.get("/api/live-article")
+def get_live_article(url: str = Query(...)):
+    """抓取指定URL的文章内容"""
+    try:
+        if "breakingnewsenglish" in url:
+            content = fetch_bne_article_content(url)
+        elif "newsinlevels" in url:
+            content = fetch_nil_article_content(url)
+        else:
+            raise HTTPException(400, "Unsupported source URL")
+
+        if not content:
+            raise HTTPException(404, "Failed to fetch article")
+
+        return content
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 
 @app.get("/api/word-explain/{word}")

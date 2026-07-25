@@ -1,6 +1,6 @@
-// Ivy's Inspiration Library - Service Worker v5
-const CACHE = 'ivy-library-v6';
-const URLS = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png'];
+// Ivy's Inspiration Library - Service Worker v7 (live content)
+const CACHE = 'ivy-library-v7';
+const URLS = ['/', '/manifest.json', '/icon-new-192.png', '/icon-new-512.png'];
 
 // 安装时立即激活新版本
 self.addEventListener('install', e => {
