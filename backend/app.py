@@ -294,6 +294,253 @@ RETELL_MATERIALS = [
 ]
 
 
+# ==================== 2岁英语启蒙素材库 ====================
+
+# 26个字母 + 关联词
+KIDS_ALPHABET = [
+    {"letter": "A", "word": "Apple", "emoji": "🍎", "phonetic": "/ˈæp.əl/"},
+    {"letter": "B", "word": "Ball", "emoji": "⚽", "phonetic": "/bɔːl/"},
+    {"letter": "C", "word": "Cat", "emoji": "🐱", "phonetic": "/kæt/"},
+    {"letter": "D", "word": "Dog", "emoji": "🐶", "phonetic": "/dɒɡ/"},
+    {"letter": "E", "word": "Elephant", "emoji": "🐘", "phonetic": "/ˈel.ɪ.fənt/"},
+    {"letter": "F", "word": "Fish", "emoji": "🐟", "phonetic": "/fɪʃ/"},
+    {"letter": "G", "word": "Giraffe", "emoji": "🦒", "phonetic": "/dʒɪˈrɑːf/"},
+    {"letter": "H", "word": "House", "emoji": "🏠", "phonetic": "/haʊs/"},
+    {"letter": "I", "word": "Ice cream", "emoji": "🍦", "phonetic": "/aɪs kriːm/"},
+    {"letter": "J", "word": "Juice", "emoji": "🧃", "phonetic": "/dʒuːs/"},
+    {"letter": "K", "word": "Kite", "emoji": "🪁", "phonetic": "/kaɪt/"},
+    {"letter": "L", "word": "Lion", "emoji": "🦁", "phonetic": "/ˈlaɪ.ən/"},
+    {"letter": "M", "word": "Monkey", "emoji": "🐵", "phonetic": "/ˈmʌŋ.ki/"},
+    {"letter": "N", "word": "Nest", "emoji": "🪺", "phonetic": "/nest/"},
+    {"letter": "O", "word": "Orange", "emoji": "🍊", "phonetic": "/ˈɒr.ɪndʒ/"},
+    {"letter": "P", "word": "Penguin", "emoji": "🐧", "phonetic": "/ˈpeŋ.ɡwɪn/"},
+    {"letter": "Q", "word": "Queen", "emoji": "👸", "phonetic": "/kwiːn/"},
+    {"letter": "R", "word": "Rabbit", "emoji": "🐰", "phonetic": "/ˈræb.ɪt/"},
+    {"letter": "S", "word": "Sun", "emoji": "☀️", "phonetic": "/sʌn/"},
+    {"letter": "T", "word": "Tiger", "emoji": "🐯", "phonetic": "/ˈtaɪ.ɡər/"},
+    {"letter": "U", "word": "Umbrella", "emoji": "☂️", "phonetic": "/ʌmˈbrel.ə/"},
+    {"letter": "V", "word": "Violin", "emoji": "🎻", "phonetic": "/ˌvaɪ.əˈlɪn/"},
+    {"letter": "W", "word": "Whale", "emoji": "🐳", "phonetic": "/weɪl/"},
+    {"letter": "X", "word": "X-ray", "emoji": "🩻", "phonetic": "/ˈeks.reɪ/"},
+    {"letter": "Y", "word": "Yo-yo", "emoji": "🪀", "phonetic": "/ˈjəʊ.jəʊ/"},
+    {"letter": "Z", "word": "Zebra", "emoji": "🦓", "phonetic": "/ˈzeb.rə/"},
+]
+
+# 主题词汇
+KIDS_THEMES = [
+    {
+        "theme": "Animals",
+        "emoji": "动物园",
+        "color": "#FEF3C7",
+        "words": [
+            {"word": "Dog", "emoji": "🐶", "phonetic": "/dɒɡ/"},
+            {"word": "Cat", "emoji": "🐱", "phonetic": "/kæt/"},
+            {"word": "Cow", "emoji": "🐮", "phonetic": "/kaʊ/"},
+            {"word": "Pig", "emoji": "🐷", "phonetic": "/pɪɡ/"},
+            {"word": "Duck", "emoji": "🦆", "phonetic": "/dʌk/"},
+            {"word": "Sheep", "emoji": "🐑", "phonetic": "/ʃiːp/"},
+            {"word": "Horse", "emoji": "🐴", "phonetic": "/hɔːs/"},
+            {"word": "Chicken", "emoji": "🐔", "phonetic": "/ˈtʃɪk.ɪn/"},
+            {"word": "Rabbit", "emoji": "🐰", "phonetic": "/ˈræb.ɪt/"},
+            {"word": "Bird", "emoji": "🐦", "phonetic": "/bɜːd/"},
+        ]
+    },
+    {
+        "theme": "Colors",
+        "emoji": "颜色",
+        "color": "#DBEAFE",
+        "words": [
+            {"word": "Red", "emoji": "🔴", "phonetic": "/red/"},
+            {"word": "Blue", "emoji": "🔵", "phonetic": "/bluː/"},
+            {"word": "Yellow", "emoji": "🟡", "phonetic": "/ˈjel.əʊ/"},
+            {"word": "Green", "emoji": "🟢", "phonetic": "/ɡriːn/"},
+            {"word": "Orange", "emoji": "🟠", "phonetic": "/ˈɒr.ɪndʒ/"},
+            {"word": "Purple", "emoji": "🟣", "phonetic": "/ˈpɜː.pəl/"},
+            {"word": "Pink", "emoji": "🩷", "phonetic": "/pɪŋk/"},
+            {"word": "Brown", "emoji": "🟤", "phonetic": "/braʊn/"},
+            {"word": "Black", "emoji": "⚫", "phonetic": "/blæk/"},
+            {"word": "White", "emoji": "⚪", "phonetic": "/waɪt/"},
+        ]
+    },
+    {
+        "theme": "Numbers",
+        "emoji": "数字",
+        "color": "#D1FAE5",
+        "words": [
+            {"word": "One", "emoji": "1️⃣", "phonetic": "/wʌn/"},
+            {"word": "Two", "emoji": "2️⃣", "phonetic": "/tuː/"},
+            {"word": "Three", "emoji": "3️⃣", "phonetic": "/θriː/"},
+            {"word": "Four", "emoji": "4️⃣", "phonetic": "/fɔːr/"},
+            {"word": "Five", "emoji": "5️⃣", "phonetic": "/faɪv/"},
+            {"word": "Six", "emoji": "6️⃣", "phonetic": "/sɪks/"},
+            {"word": "Seven", "emoji": "7️⃣", "phonetic": "/ˈsev.ən/"},
+            {"word": "Eight", "emoji": "8️⃣", "phonetic": "/eɪt/"},
+            {"word": "Nine", "emoji": "9️⃣", "phonetic": "/naɪn/"},
+            {"word": "Ten", "emoji": "🔟", "phonetic": "/ten/"},
+        ]
+    },
+    {
+        "theme": "Food",
+        "emoji": "食物",
+        "color": "#FED7AA",
+        "words": [
+            {"word": "Apple", "emoji": "🍎", "phonetic": "/ˈæp.əl/"},
+            {"word": "Banana", "emoji": "🍌", "phonetic": "/bəˈnɑː.nə/"},
+            {"word": "Bread", "emoji": "🍞", "phonetic": "/bred/"},
+            {"word": "Milk", "emoji": "🥛", "phonetic": "/mɪlk/"},
+            {"word": "Egg", "emoji": "🥚", "phonetic": "/eɡ/"},
+            {"word": "Cake", "emoji": "🍰", "phonetic": "/keɪk/"},
+            {"word": "Fish", "emoji": "🐟", "phonetic": "/fɪʃ/"},
+            {"word": "Cheese", "emoji": "🧀", "phonetic": "/tʃiːz/"},
+            {"word": "Cookie", "emoji": "🍪", "phonetic": "/ˈkʊk.i/"},
+            {"word": "Water", "emoji": "💧", "phonetic": "/ˈwɔː.tər/"},
+        ]
+    },
+    {
+        "theme": "Body Parts",
+        "emoji": "身体",
+        "color": "#FCE7F3",
+        "words": [
+            {"word": "Head", "emoji": "🧑", "phonetic": "/hed/"},
+            {"word": "Eye", "emoji": "👁️", "phonetic": "/aɪ/"},
+            {"word": "Nose", "emoji": "👃", "phonetic": "/nəʊz/"},
+            {"word": "Mouth", "emoji": "👄", "phonetic": "/maʊθ/"},
+            {"word": "Ear", "emoji": "👂", "phonetic": "/ɪər/"},
+            {"word": "Hand", "emoji": "✋", "phonetic": "/hænd/"},
+            {"word": "Foot", "emoji": "🦶", "phonetic": "/fʊt/"},
+            {"word": "Arm", "emoji": "💪", "phonetic": "/ɑːm/"},
+            {"word": "Leg", "emoji": "🦵", "phonetic": "/leɡ/"},
+            {"word": "Tummy", "emoji": "🤰", "phonetic": "/ˈtʌm.i/"},
+        ]
+    },
+]
+
+# 经典儿歌
+KIDS_SONGS = [
+    {
+        "title": "Twinkle Twinkle Little Star",
+        "emoji": "⭐",
+        "lyrics": [
+            "Twinkle, twinkle, little star,",
+            "How I wonder what you are!",
+            "Up above the world so high,",
+            "Like a diamond in the sky.",
+            "Twinkle, twinkle, little star,",
+            "How I wonder what you are!"
+        ],
+        "tip": "Sing slowly and do hand gestures — open and close hands like twinkling stars."
+    },
+    {
+        "title": "Old MacDonald Had a Farm",
+        "emoji": " farma",
+        "lyrics": [
+            "Old MacDonald had a farm, E-I-E-I-O!",
+            "And on that farm he had a cow, E-I-E-I-O!",
+            "With a moo-moo here, and a moo-moo there,",
+            "Here a moo, there a moo, everywhere a moo-moo!",
+            "Old MacDonald had a farm, E-I-E-I-O!"
+        ],
+        "tip": "Make animal sounds together! Let your child pick the next animal."
+    },
+    {
+        "title": "Head, Shoulders, Knees and Toes",
+        "emoji": "🧑",
+        "lyrics": [
+            "Head, shoulders, knees and toes, knees and toes!",
+            "Head, shoulders, knees and toes, knees and toes!",
+            "And eyes, and ears, and mouth, and nose!",
+            "Head, shoulders, knees and toes, knees and toes!"
+        ],
+        "tip": "Touch each body part as you sing. Speed up for fun!"
+    },
+    {
+        "title": "The Wheels on the Bus",
+        "emoji": "🚌",
+        "lyrics": [
+            "The wheels on the bus go round and round,",
+            "Round and round, round and round.",
+            "The wheels on the bus go round and round,",
+            "All through the town!",
+            "The doors on the bus go open and shut...",
+            "The wipers on the bus go swish swish swish..."
+        ],
+        "tip": "Use arm movements for wheels spinning, doors opening, and wipers swishing."
+    },
+    {
+        "title": "If You're Happy and You Know It",
+        "emoji": "😊",
+        "lyrics": [
+            "If you're happy and you know it, clap your hands! 👏",
+            "If you're happy and you know it, clap your hands! 👏",
+            "If you're happy and you know it, then your face will surely show it,",
+            "If you're happy and you know it, clap your hands! 👏",
+            "Stomp your feet! 🦶",
+            "Shout hooray! 🙌"
+        ],
+        "tip": "Do the actions together — clapping, stomping, and cheering!"
+    },
+    {
+        "title": "Baa Baa Black Sheep",
+        "emoji": "🐑",
+        "lyrics": [
+            "Baa, baa, black sheep, have you any wool?",
+            "Yes sir, yes sir, three bags full.",
+            "One for the master, one for the dame,",
+            "And one for the little boy who lives down the lane.",
+            "Baa, baa, black sheep, have you any wool?",
+            "Yes sir, yes sir, three bags full."
+        ],
+        "tip": "Use a soft voice for 'baa baa' and let your child join in."
+    },
+]
+
+# 互动游戏
+KIDS_GAMES = [
+    {
+        "title": "Point to the Color",
+        "emoji": "🎨",
+        "instruction": "Say a color and ask your child to point to something that color in the room.",
+        "examples": ["Point to something RED!", "Point to something BLUE!", "Point to something YELLOW!"],
+        "tip": "Start with primary colors (red, blue, yellow) before adding more."
+    },
+    {
+        "title": "Animal Sound Match",
+        "emoji": "Animal Sound",
+        "instruction": "Make an animal sound and ask your child to say the animal's name in English.",
+        "examples": ["What says 'Moo'? → Cow!", "What says 'Meow'? → Cat!", "What says 'Woof'? → Dog!"],
+        "tip": "Use toy animals or pictures to make it more visual."
+    },
+    {
+        "title": "Count Everything",
+        "emoji": "Count",
+        "instruction": "Count everyday objects together in English.",
+        "examples": ["Let's count the stairs! 1, 2, 3...", "How many apples? 1, 2!", "Count your fingers! 1-10!"],
+        "tip": "Count slowly and use fingers to show the numbers."
+    },
+    {
+        "title": "Touch Your Body",
+        "emoji": "🧑",
+        "instruction": "Say a body part and ask your child to touch it.",
+        "examples": ["Touch your NOSE!", "Touch your EARS!", "Touch your TUMMY!"],
+        "tip": "Start with face parts (nose, eyes, ears) then add body parts."
+    },
+    {
+        "title": "What's This?",
+        "emoji": "What",
+        "instruction": "Point to objects around you and ask 'What's this?' Let your child answer.",
+        "examples": ["What's this? → It's a cup!", "What's this? → It's a book!", "What's this? → It's a ball!"],
+        "tip": "Use objects your child sees every day. Praise every attempt!"
+    },
+    {
+        "title": "Clap the Syllables",
+        "emoji": "👏",
+        "instruction": "Say a word and clap once for each syllable together.",
+        "examples": ["Ap-ple → 👏👏 (2 claps)", "Ba-na-na → 👏👏👏 (3 claps)", "Cat → 👏 (1 clap)"],
+        "tip": "Great for developing phonological awareness. Keep it playful!"
+    },
+]
+
+
 # ==================== 数据模型 ====================
 class TodoCreate(BaseModel):
     title: str
@@ -412,9 +659,32 @@ def get_retell_materials():
     """获取复述练习材料"""
     return RETELL_MATERIALS
 
+
+# ==================== 2岁启蒙 API ====================
+
+@app.get("/api/kids/alphabet")
+def get_kids_alphabet():
+    """获取字母学习数据"""
+    return KIDS_ALPHABET
+
+@app.get("/api/kids/themes")
+def get_kids_themes():
+    """获取主题词汇数据"""
+    return KIDS_THEMES
+
+@app.get("/api/kids/songs")
+def get_kids_songs():
+    """获取儿歌数据"""
+    return KIDS_SONGS
+
+@app.get("/api/kids/games")
+def get_kids_games():
+    """获取互动游戏数据"""
+    return KIDS_GAMES
+
+
 @app.get("/api/word-explain/{word}")
 def explain_word(word: str):
-    """疑难单词讲解 - 先查内置词库，没有再调 Free Dictionary API"""
     word_lower = word.lower().strip()
 
     # 1. 先查内置词库

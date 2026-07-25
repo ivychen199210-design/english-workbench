@@ -269,6 +269,50 @@
         .score-big { font-size: 24px; font-weight: 800; }
         .pron-tip { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
 
+        /* Kids 启蒙板块 */
+        .alphabet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+        .alpha-card {
+            background: var(--card-bg); border-radius: 14px; padding: 16px 8px;
+            text-align: center; cursor: pointer; box-shadow: var(--shadow);
+            transition: transform 0.15s; position: relative;
+        }
+        .alpha-card:active { transform: scale(0.92); }
+        .alpha-letter { font-size: 28px; font-weight: 800; color: var(--primary-dark); line-height: 1; }
+        .alpha-emoji { font-size: 32px; margin-top: 4px; }
+        .alpha-word { font-size: 12px; font-weight: 600; color: var(--text); margin-top: 2px; }
+
+        .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+        .theme-card {
+            background: var(--card-bg); border-radius: 14px; padding: 16px;
+            text-align: center; cursor: pointer; box-shadow: var(--shadow);
+            transition: transform 0.15s;
+        }
+        .theme-card:active { transform: scale(0.95); }
+        .theme-emoji { font-size: 40px; }
+        .theme-word { font-size: 15px; font-weight: 700; margin-top: 4px; color: var(--primary-dark); }
+        .theme-phonetic { font-size: 11px; color: var(--text-muted); }
+
+        .song-card {
+            background: var(--card-bg); border-radius: 14px; padding: 16px;
+            margin-bottom: 12px; box-shadow: var(--shadow); border-left: 4px solid #EC4899;
+        }
+        .song-title { font-size: 16px; font-weight: 700; }
+        .song-lyrics { margin-top: 10px; font-size: 14px; line-height: 1.8; color: var(--text); }
+        .song-tip { margin-top: 10px; padding: 8px 12px; background: #FCE7F3; border-radius: 8px; font-size: 13px; }
+
+        .game-card {
+            background: var(--card-bg); border-radius: 14px; padding: 16px;
+            margin-bottom: 12px; box-shadow: var(--shadow); border-left: 4px solid #10B981;
+        }
+        .game-title { font-size: 16px; font-weight: 700; }
+        .game-instruction { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
+        .game-examples { margin-top: 10px; }
+        .game-example {
+            padding: 8px 12px; background: #D1FAE5; border-radius: 8px;
+            margin-bottom: 6px; font-size: 14px; font-weight: 500;
+        }
+        .game-tip { margin-top: 10px; padding: 8px 12px; background: #FEF3C7; border-radius: 8px; font-size: 13px; }
+
         /* 弹窗 - 移动端全屏 */
         .sheet-overlay {
             position: fixed; inset:0; background: rgba(0,0,0,0.4); z-index:200;
@@ -403,6 +447,50 @@
     <div id="vocab-list"></div>
 </div>
 
+<!-- 5. Kids English 启蒙 -->
+<div class="tab-content" id="tab-kids">
+    <!-- 子导航 -->
+    <div class="dialogue-scroll" id="kids-subtabs" style="margin-bottom:16px">
+        <div class="dialogue-tab active" onclick="switchKidsSub('alphabet', this)">🔤 Alphabet</div>
+        <div class="dialogue-tab" onclick="switchKidsSub('themes', this)">🎨 Themes</div>
+        <div class="dialogue-tab" onclick="switchKidsSub('songs', this)">🎵 Songs</div>
+        <div class="dialogue-tab" onclick="switchKidsSub('games', this)">🎲 Games</div>
+    </div>
+
+    <!-- Alphabet -->
+    <div id="kids-alphabet">
+        <div class="card" style="background:#FEF9C3;border-left:4px solid #F59E0B">
+            <div style="font-size:14px"><strong>👨‍👩‍👧 Parent Tip:</strong> Tap each letter to hear it. Say the letter and word together with your child!</div>
+        </div>
+        <div id="alphabet-grid"></div>
+    </div>
+
+    <!-- Themes -->
+    <div id="kids-themes" style="display:none">
+        <div class="card" style="background:#DBEAFE;border-left:4px solid #3B82F6">
+            <div style="font-size:14px"><strong>👨‍👩‍👧 Parent Tip:</strong> Pick a theme, tap each picture, and repeat the word together. Point to real objects too!</div>
+        </div>
+        <div class="dialogue-scroll" id="theme-tabs"></div>
+        <div id="theme-content"></div>
+    </div>
+
+    <!-- Songs -->
+    <div id="kids-songs" style="display:none">
+        <div class="card" style="background:#FCE7F3;border-left:4px solid #EC4899">
+            <div style="font-size:14px"><strong>👨‍👩‍👧 Parent Tip:</strong> Sing along with your child! Use gestures and actions to make it fun.</div>
+        </div>
+        <div id="songs-list"></div>
+    </div>
+
+    <!-- Games -->
+    <div id="kids-games" style="display:none">
+        <div class="card" style="background:#D1FAE5;border-left:4px solid #10B981">
+            <div style="font-size:14px"><strong>👨‍👩‍👧 Parent Tip:</strong> Play together! These games build vocabulary through movement and repetition.</div>
+        </div>
+        <div id="games-list"></div>
+    </div>
+</div>
+
 <!-- 底部导航 -->
 <div class="bottombar">
     <div class="bottom-tab active" onclick="switchTab('dashboard')" data-tab="dashboard">
@@ -416,6 +504,10 @@
     <div class="bottom-tab" onclick="switchTab('english')" data-tab="english">
         <div class="tab-icon">📖</div>
         <div>英语</div>
+    </div>
+    <div class="bottom-tab" onclick="switchTab('kids')" data-tab="kids">
+        <div class="tab-icon">🧒</div>
+        <div>Kids</div>
     </div>
     <div class="bottom-tab" onclick="switchTab('tools')" data-tab="tools">
         <div class="tab-icon">🔧</div>
@@ -448,6 +540,7 @@ function switchTab(name) {
         if (!dialogues.length) initEnglish();
     }
     if (name === 'tools') loadVocabBook();
+    if (name === 'kids') loadKidsData();
     window.scrollTo(0,0);
 }
 
@@ -1069,6 +1162,132 @@ async function deleteVocab(id){await fetch(`${API}/api/vocabulary/${id}`,{method
 async function logStudy(module,duration){
     await fetch(`${API}/api/study-log`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({module,duration_min:duration})});
     toast('学习记录已保存');
+}
+
+// ========== 2岁英语启蒙 ==========
+let kidsData = {alphabet:[], themes:[], songs:[], games:[]};
+let kidsLoaded = false;
+let currentTheme = null;
+
+async function loadKidsData() {
+    if (!kidsLoaded) {
+        const [a, t, s, g] = await Promise.all([
+            fetch(`${API}/api/kids/alphabet`).then(r=>r.json()),
+            fetch(`${API}/api/kids/themes`).then(r=>r.json()),
+            fetch(`${API}/api/kids/songs`).then(r=>r.json()),
+            fetch(`${API}/api/kids/games`).then(r=>r.json()),
+        ]);
+        kidsData = {alphabet:a, themes:t, songs:s, games:g};
+        kidsLoaded = true;
+        renderAlphabet();
+        renderThemeTabs();
+        renderSongs();
+        renderGames();
+    }
+}
+
+function switchKidsSub(sub, el) {
+    ['alphabet','themes','songs','games'].forEach(s => {
+        document.getElementById('kids-' + s).style.display = 'none';
+    });
+    document.getElementById('kids-' + sub).style.display = 'block';
+    document.querySelectorAll('#kids-subtabs .dialogue-tab').forEach(t => t.classList.remove('active'));
+    if (el) el.classList.add('active');
+}
+
+// 朗读函数（给小朋友用，语速慢一点）
+function speakKids(text) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.7;  // 慢速，适合小朋友
+    const voices = speechSynthesis.getVoices();
+    const enVoice = voices.find(v => v.lang.startsWith('en'));
+    if (enVoice) u.voice = enVoice;
+    speechSynthesis.speak(u);
+}
+
+// Alphabet
+function renderAlphabet() {
+    document.getElementById('alphabet-grid').innerHTML = kidsData.alphabet.map(a => `
+        <div class="alpha-card" onclick="speakKids('${a.letter}... ${a.word}')">
+            <div class="alpha-letter">${a.letter}</div>
+            <div class="alpha-emoji">${a.emoji}</div>
+            <div class="alpha-word">${a.word}</div>
+        </div>
+    `).join('');
+}
+
+// Themes
+function renderThemeTabs() {
+    document.getElementById('theme-tabs').innerHTML = kidsData.themes.map((t,i) =>
+        `<div class="dialogue-tab ${i===0?'active':''}" onclick="selectTheme(${i})">${t.theme}</div>`
+    ).join('');
+    if (kidsData.themes.length) {
+        currentTheme = 0;
+        renderThemeContent();
+    }
+}
+
+function selectTheme(i) {
+    currentTheme = i;
+    document.querySelectorAll('#theme-tabs .dialogue-tab').forEach((t,idx) => {
+        t.classList.toggle('active', idx === i);
+    });
+    renderThemeContent();
+}
+
+function renderThemeContent() {
+    const t = kidsData.themes[currentTheme];
+    if (!t) return;
+    document.getElementById('theme-content').innerHTML = `
+        <div class="theme-grid">
+            ${t.words.map(w => `
+                <div class="theme-card" onclick="speakKids('${w.word}')" style="background:${t.color}">
+                    <div class="theme-emoji">${w.emoji}</div>
+                    <div class="theme-word">${w.word}</div>
+                    <div class="theme-phonetic">${w.phonetic}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Songs
+function renderSongs() {
+    document.getElementById('songs-list').innerHTML = kidsData.songs.map((s,i) => `
+        <div class="song-card">
+            <div class="flex flex-between flex-center">
+                <div class="song-title">${s.emoji} ${s.title}</div>
+                <button class="btn btn-sm btn-primary" onclick="speakSong(${i})">🔊 Play</button>
+            </div>
+            <div class="song-lyrics">${s.lyrics.map(l => `<div>${l}</div>`).join('')}</div>
+            <div class="song-tip">💡 ${s.tip}</div>
+        </div>
+    `).join('');
+}
+
+function speakSong(i) {
+    const s = kidsData.songs[i];
+    const text = s.lyrics.join('. ');
+    speakKids(text);
+}
+
+// Games
+function renderGames() {
+    document.getElementById('games-list').innerHTML = kidsData.games.map((g,i) => `
+        <div class="game-card">
+            <div class="game-title">${g.emoji} ${g.title}</div>
+            <div class="game-instruction">${g.instruction}</div>
+            <div class="game-examples">
+                ${g.examples.map(e => `
+                    <div class="game-example" onclick="speakKids('${e.replace(/[^a-zA-Z\s]/g,'').trim()}')">${e}</div>
+                `).join('')}
+            </div>
+            <div class="game-tip">💡 ${g.tip}</div>
+        </div>
+    `).join('');
 }
 
 // ========== 初始化 ==========
