@@ -1610,8 +1610,37 @@ fetch(`${API}/api/vocab-cards`).then(r=>r.json()).then(d=>{vocabCards=d;document
 fetch(`${API}/api/retell`).then(r=>r.json()).then(d=>{retellMaterials=d;loadTodayRetell();});
 fetch(`${API}/api/roleplay`).then(r=>r.json()).then(d=>{roleplayScenarios=d;document.getElementById('roleplay-list').innerHTML=d.map(s=>`<div class="scenario-card" onclick="openRoleplaySheet(${s.id})"><div class="sc-title">🎭 ${s.title}</div><div class="sc-desc">角色：${s.role} | ${s.setting}</div><div class="sc-tips">💡 ${s.tips}</div></div>`).join('');});
 
-// Service Worker 注册
-if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+// Service Worker 注册 + 强制更新
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+        // 检查是否有新版本，有就立即激活
+        if(reg.waiting){ reg.waiting.postMessage('skipWaiting'); }
+        reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            if(nw){ nw.addEventListener('statechange', () => {
+                if(nw.state === 'installed' && navigator.serviceWorker.controller){
+                    // 新版本已下载，强制刷新页面
+                    window.location.reload();
+                }
+            });}
+        });
+    }).catch(()=>{});
+    // 监听控制器变化，自动刷新
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+    });
+}
+
+// 版本检查：如果本地版本号不匹配，清除所有缓存并刷新
+const APP_VERSION = 'v8.1';
+if(localStorage.getItem('app_ver') !== APP_VERSION){
+    localStorage.setItem('app_ver', APP_VERSION);
+    if('caches' in window){
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k))).then(() => {
+            window.location.reload();
+        });
+    }
+}
 </script>
 </body>
 </html>

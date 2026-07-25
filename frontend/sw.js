@@ -1,11 +1,17 @@
-// Ivy's Inspiration Library - Service Worker v8 (vocab audio)
-const CACHE = 'ivy-library-v8';
+// Ivy's Inspiration Library - Service Worker v8.1 (vocab audio + force refresh)
+const CACHE = 'ivy-library-v8-1';
 const URLS = ['/', '/manifest.json', '/icon-new-192.png', '/icon-new-512.png'];
+
+// 监听 skipWaiting 消息
+self.addEventListener('message', e => {
+    if (e.data === 'skipWaiting') self.skipWaiting();
+});
 
 // 安装时立即激活新版本
 self.addEventListener('install', e => {
+    self.skipWaiting();
     e.waitUntil(
-        caches.open(CACHE).then(c => c.addAll(URLS)).then(() => self.skipWaiting())
+        caches.open(CACHE).then(c => c.addAll(URLS))
     );
 });
 
