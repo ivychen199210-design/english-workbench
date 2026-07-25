@@ -1614,8 +1614,30 @@ def get_dashboard():
 
 # ==================== 静态文件服务 ====================
 if FRONTEND_DIR.exists():
-    # 挂载所有前端静态文件到根路径
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="static")
+    # 自定义 index.html 路由：添加 no-cache 头，确保 HTML 永远不被浏览器缓存
+    @app.get("/", response_class=FileResponse)
+    async def serve_index():
+        return FileResponse(
+            str(FRONTEND_DIR / "index.html"),
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            }
+        )
+
+    # 其他静态文件（sw.js, manifest.json, icons 等）也加 no-cache
+    @app.get("/{filename:path}")
+    async def serve_static(filename: str):
+        filepath = FRONTEND_DIR / filename
+        if filepath.exists() and filepath.is_file():
+            return FileResponse(
+                str(filepath),
+                headers={
+                    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                }
+            )
+        raise HTTPException(404, "File not found")
 
 
 if __name__ == "__main__":
