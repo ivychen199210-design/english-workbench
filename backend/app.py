@@ -419,7 +419,8 @@ KIDS_THEMES = [
 KIDS_SONGS = [
     {
         "title": "Twinkle Twinkle Little Star",
-        "emoji": "⭐",
+        "emoji": "Twinkle",
+        "youtube_id": "tV2vU5qCFvg",
         "lyrics": [
             "Twinkle, twinkle, little star,",
             "How I wonder what you are!",
@@ -432,7 +433,8 @@ KIDS_SONGS = [
     },
     {
         "title": "Old MacDonald Had a Farm",
-        "emoji": " farma",
+        "emoji": "Farm",
+        "youtube_id": "MUjk3kFRZNg",
         "lyrics": [
             "Old MacDonald had a farm, E-I-E-I-O!",
             "And on that farm he had a cow, E-I-E-I-O!",
@@ -444,7 +446,8 @@ KIDS_SONGS = [
     },
     {
         "title": "Head, Shoulders, Knees and Toes",
-        "emoji": "🧑",
+        "emoji": "Body",
+        "youtube_id": "WX8mwOQ5YJ8",
         "lyrics": [
             "Head, shoulders, knees and toes, knees and toes!",
             "Head, shoulders, knees and toes, knees and toes!",
@@ -455,7 +458,8 @@ KIDS_SONGS = [
     },
     {
         "title": "The Wheels on the Bus",
-        "emoji": "🚌",
+        "emoji": "Bus",
+        "youtube_id": "nvE0Df0Plx4",
         "lyrics": [
             "The wheels on the bus go round and round,",
             "Round and round, round and round.",
@@ -468,7 +472,8 @@ KIDS_SONGS = [
     },
     {
         "title": "If You're Happy and You Know It",
-        "emoji": "😊",
+        "emoji": "Happy",
+        "youtube_id": "71hqRTUI-U0",
         "lyrics": [
             "If you're happy and you know it, clap your hands! 👏",
             "If you're happy and you know it, clap your hands! 👏",
@@ -481,7 +486,8 @@ KIDS_SONGS = [
     },
     {
         "title": "Baa Baa Black Sheep",
-        "emoji": "🐑",
+        "emoji": "Sheep",
+        "youtube_id": "MN_2k5xXGf8",
         "lyrics": [
             "Baa, baa, black sheep, have you any wool?",
             "Yes sir, yes sir, three bags full.",

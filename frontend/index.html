@@ -1258,14 +1258,34 @@ function renderThemeContent() {
 function renderSongs() {
     document.getElementById('songs-list').innerHTML = kidsData.songs.map((s,i) => `
         <div class="song-card">
-            <div class="flex flex-between flex-center">
-                <div class="song-title">${s.emoji} ${s.title}</div>
-                <button class="btn btn-sm btn-primary" onclick="speakSong(${i})">🔊 Play</button>
-            </div>
+            <div class="song-title">${s.emoji} ${s.title}</div>
+            <div class="song-video" id="song-video-${i}" style="margin-top:10px"></div>
+            <button class="btn btn-sm btn-primary mt-8" onclick="toggleSongVideo(${i})" id="song-btn-${i}">▶️ Watch & Sing</button>
             <div class="song-lyrics">${s.lyrics.map(l => `<div>${l}</div>`).join('')}</div>
             <div class="song-tip">💡 ${s.tip}</div>
         </div>
     `).join('');
+}
+
+function toggleSongVideo(i) {
+    const container = document.getElementById('song-video-' + i);
+    const btn = document.getElementById('song-btn-' + i);
+    const s = kidsData.songs[i];
+    if (container.innerHTML) {
+        // 关闭
+        container.innerHTML = '';
+        btn.textContent = '▶️ Watch & Sing';
+    } else {
+        // 打开 YouTube 嵌入
+        container.innerHTML = `
+            <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;">
+                <iframe style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+                    src="https://www.youtube.com/embed/${s.youtube_id}?autoplay=1&rel=0"
+                    allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+        `;
+        btn.textContent = '⏹️ Stop';
+    }
 }
 
 function speakSong(i) {
