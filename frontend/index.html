@@ -364,7 +364,78 @@
         .sheet-actions { display: flex; gap: 10px; margin-top: 20px; }
         .sheet-actions .btn { flex:1; }
 
-        /* Toast */
+        /* 侧滑抽屉 */
+        .drawer-overlay {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0);
+            pointer-events: none;
+            transition: background 0.3s ease;
+        }
+        .drawer-overlay.show { background: rgba(0,0,0,0.4); pointer-events: auto; }
+        .drawer {
+            position: fixed; top: 0; left: 0; bottom: 0; z-index: 201;
+            width: 78%; max-width: 320px;
+            background: linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%);
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+            display: flex; flex-direction: column;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .drawer.show { transform: translateX(0); }
+        .drawer-header {
+            padding: 24px 20px 16px;
+            display: flex; align-items: center; gap: 14px;
+            border-bottom: 1px solid rgba(34,197,94,0.15);
+        }
+        .drawer-avatar {
+            width: 52px; height: 52px; border-radius: 50%;
+            background: linear-gradient(135deg, #86EFAC 0%, #4ADE80 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; color: #fff;
+            box-shadow: 0 2px 8px rgba(34,197,94,0.3);
+            flex-shrink: 0;
+        }
+        .drawer-name { font-size: 17px; font-weight: 700; color: #166534; }
+        .drawer-subtitle { font-size: 12px; color: #4B7C5A; margin-top: 2px; }
+        .drawer-menu { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .drawer-menu-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 20px;
+            cursor: pointer;
+            color: #166534;
+            font-size: 15px; font-weight: 500;
+            transition: background 0.15s;
+            border-left: 3px solid transparent;
+        }
+        .drawer-menu-item:active { background: rgba(34,197,94,0.1); }
+        .drawer-menu-item.active {
+            background: rgba(34,197,94,0.15);
+            border-left-color: #16A34A;
+            color: #15803D;
+            font-weight: 700;
+        }
+        .drawer-menu-item .mi-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: rgba(34,197,94,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .drawer-menu-item.active .mi-icon {
+            background: #16A34A;
+            color: #fff;
+        }
+        .drawer-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(34,197,94,0.15);
+            font-size: 12px; color: #4B7C5A;
+        }
+        .drawer-footer .status { font-weight: 600; color: #166534; margin-bottom: 4px; }
+        .drawer-footer .times { display: flex; gap: 12px; margin-top: 4px; font-size: 11px; }
+
+/* Toast */
         .toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
             background: var(--text); color: #fff; padding: 12px 24px;
@@ -389,7 +460,10 @@
 
 <!-- 顶部栏 -->
 <div class="topbar">
-    <div class="topbar-title">🌿 Ivy's Inspiration Library</div>
+    <div style="display:flex;align-items:center;gap:12px">
+        <div onclick="openDrawer()" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);border-radius:8px;cursor:pointer;font-size:18px">☰</div>
+        <div class="topbar-title"><span>Ivy's</span> 灵感库</div>
+    </div>
     <div style="font-size:13px;opacity:0.7" id="topbar-date"></div>
 </div>
 
@@ -583,6 +657,41 @@
     </div>
 </div>
 
+<!-- 侧滑抽屉 -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+    <div class="drawer-header">
+        <div class="drawer-avatar">🐻</div>
+        <div>
+            <div class="drawer-name">胡楚靓</div>
+            <div class="drawer-subtitle">创作工作台</div>
+        </div>
+    </div>
+    <div class="drawer-menu">
+        <div class="drawer-menu-item" data-tab="dashboard" onclick="drawerNav('dashboard')">
+            <div class="mi-icon">📊</div><div>概览</div>
+        </div>
+        <div class="drawer-menu-item active" data-tab="workbench" onclick="drawerNav('workbench')">
+            <div class="mi-icon">📋</div><div>每日计划</div>
+        </div>
+        <div class="drawer-menu-item" data-tab="english" onclick="drawerNav('english')">
+            <div class="mi-icon">📖</div><div>英语学习</div>
+        </div>
+        <div class="drawer-menu-item" data-tab="kids" onclick="drawerNav('kids')">
+            <div class="mi-icon">🧒</div><div>Kids</div>
+        </div>
+        <div class="drawer-menu-item" data-tab="tools" onclick="drawerNav('tools')">
+            <div class="mi-icon">🔧</div><div>工具</div>
+        </div>
+    </div>
+    <div class="drawer-footer">
+        <div class="status">状态：复更中</div>
+        <div class="times">
+            <span>灵感 09:00 · 复盘 18:00</span>
+        </div>
+    </div>
+</div>
+
 <!-- 底部弹窗容器 -->
 <div class="sheet-overlay" id="sheet-overlay" onclick="if(event.target===this)closeSheet()">
     <div class="sheet" id="sheet-content"></div>
@@ -601,7 +710,9 @@ function switchTab(name) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
     document.querySelectorAll('.bottom-tab').forEach(b => b.classList.remove('active'));
-    document.querySelector(`.bottom-tab[data-tab="${name}"]`).classList.add('active');
+    document.querySelector(`.bottom-tab[data-tab="${name}"]`)?.classList.add('active');
+    document.querySelectorAll('.drawer-menu-item').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.drawer-menu-item[data-tab="${name}"]`)?.classList.add('active');
     if (name === 'dashboard') loadDashboard();
     if (name === 'workbench') { loadTodos(); loadSchedule(); loadCheckin(); }
     if (name === 'english') {
@@ -612,6 +723,31 @@ function switchTab(name) {
     if (name === 'kids') loadKidsData();
     window.scrollTo(0,0);
 }
+
+function openDrawer() {
+    document.getElementById('drawer').classList.add('show');
+    document.getElementById('drawer-overlay').classList.add('show');
+}
+function closeDrawer() {
+    document.getElementById('drawer').classList.remove('show');
+    document.getElementById('drawer-overlay').classList.remove('show');
+}
+function drawerNav(name) {
+    switchTab(name);
+    closeDrawer();
+}
+
+// 触摸滑动支持
+let drawerTouchStartX = 0;
+document.addEventListener('touchstart', e => {
+    drawerTouchStartX = e.touches[0].clientX;
+}, {passive:true});
+document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - drawerTouchStartX;
+    if (drawerTouchStartX < 30 && dx > 60) openDrawer();  // 从左边缘右滑打开
+    const drawer = document.getElementById('drawer');
+    if (drawer.classList.contains('show') && dx < -60) closeDrawer(); // 左滑关闭
+}, {passive:true});
 
 function toast(msg) {
     const t = document.getElementById('toast');
